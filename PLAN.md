@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Final specification for implementation  
-> **Last updated:** 2026-07-11 (React + Vite conventions added)  
+> **Last updated:** 2026-07-13 (migration ownership rule)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -46,6 +46,7 @@
 | **Content** | No pre-installed textbook content; user imports own lists + optional JLPT base lists |
 | **Sources** | Metadata only (Genki, Anki, videos, textbooks, etc.) — **NOT** the organizing principle |
 | **Backend / Sync** | **Supabase** — Postgres (data) + Storage (audio) + Auth |
+| **Database schema** | **Supabase CLI migrations** — versioned SQL in `supabase/migrations/` (not manual Dashboard queries) |
 | **Local storage** | **Dexie.js** over IndexedDB (offline-first cache) |
 | **Device usage** | Regular switching between Web and Android — automatic sync required |
 | **Region** | Supabase **EU** (e.g. Frankfurt) |
@@ -129,6 +130,19 @@
 **Constraints:** Modular architecture — no monolithic components or files (see [§22](#22-react--vite-architecture--best-practices)).  
 **Alternatives considered:** SvelteKit (rejected: user preference for React).
 
+### ADR-012: Supabase CLI migrations (not Dashboard SQL)
+**Decision:** All database schema changes (tables, indexes, RLS, storage policies) are managed via **Supabase CLI migrations** in `supabase/migrations/`.  
+**Rationale:** Version-controlled, reproducible, reviewable in git; same schema on every environment; no ad-hoc SQL in the Dashboard.  
+**Workflow:** `supabase migration new` → edit SQL → `supabase db push` to remote (or `supabase db reset` locally).  
+**Alternatives considered:** Manual SQL Editor in Dashboard (rejected: not versioned); ORM migrations like Prisma (rejected: unnecessary extra layer).
+
+### ADR-013: Migrations run by user only (not by AI agent)
+**Decision:** The AI coding agent **must never** run commands that connect to or modify the production Supabase database.  
+**Forbidden commands (agent):** `supabase db push`, `supabase db reset`, `supabase migration repair`, direct SQL against remote, or any remote DB operation.  
+**Allowed (agent):** Create or edit migration **files** in `supabase/migrations/`; document SQL; local linting if non-destructive.  
+**Rationale:** Production database access stays under the owner's control only.  
+**Owner runs:** `supabase db push`, `supabase migration list`, and all remote apply/inspect steps manually.
+
 ---
 
 ## 4. Core Principles
@@ -141,6 +155,7 @@
 6. **Topic mastery matters** — track mastery per topic, not just hours studied
 7. **Global search** — find kanji, vocabulary, grammar, topics before adding duplicates
 8. **Supabase for remote** — Postgres for structured data, Storage for audio
+9. **Schema as code** — Supabase CLI migrations in git; never create tables by hand in the Dashboard
 
 ---
 
@@ -549,6 +564,78 @@ CREATE POLICY "Users can only access own items"
 - Email + password (single private account)
 - Session persisted in browser/PWA
 - Same session across Web and Android after login
+- Frontend env: `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` (replaces legacy `anon` key)
+
+### 9.6 Database migrations (Supabase CLI)
+
+> **Rule:** Do not create or alter tables via the Dashboard SQL Editor for this project. All schema changes go through migration files.
+
+> **Rule (agent):** The AI agent writes migration files only. **Never** run `supabase db push`, `supabase db reset`, or any command that modifies the remote/production database. The project owner applies migrations manually.
+
+#### Repository layout
+
+```
+supabase/
+├── config.toml              # local CLI config (commit)
+├── migrations/              # timestamped SQL files (commit)
+│   └── 20260713120000_initial_schema.sql
+└── seed.sql                 # optional test data (commit if used)
+```
+
+#### Prerequisites
+
+- [Supabase CLI](https://supabase.com/docs/guides/cli) installed (`brew install supabase/tap/supabase` or `npm i -g supabase`)
+- Project created in **EU region** (Frankfurt)
+- `supabase login` and `supabase link --project-ref <ref>` (ref from project URL)
+
+#### Workflow
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| Init (once) | `supabase init` | Create `supabase/` folder in repo |
+| Link (once) | `supabase link --project-ref <ref>` | Connect CLI to remote project |
+| New migration | `supabase migration new <name>` | Create empty SQL file in `migrations/` |
+| Apply to remote | `supabase db push` | Run pending migrations on linked project (**owner only**, not agent) |
+| List status | `supabase migration list` | See local vs remote applied migrations (**owner only**) |
+| Local dev (optional) | `supabase start` | Docker: local Postgres + Auth (**owner only**) |
+| Reset local (optional) | `supabase db reset` | Reapply all migrations from scratch locally (**owner only**) |
+
+#### What belongs in migrations
+
+- `CREATE TABLE` / `ALTER TABLE` for all entities in §9.2
+- Indexes (§9.3)
+- `ENABLE ROW LEVEL SECURITY` + policies (§9.4)
+- Storage bucket + storage policies (`listening-audio`)
+- Triggers (e.g. `updated_at` auto-update) if used
+- Future schema changes — **always** a new migration file, never edit an already-pushed migration
+
+#### What does NOT belong in migrations
+
+- Creating the Supabase project (Dashboard)
+- Creating the user account (Dashboard → Auth → Users, or app login)
+- Browsing / inspecting data (Table Editor)
+- Storing API keys (`.env`, gitignored)
+
+#### Initial migration checklist
+
+The first migration (`initial_schema`) should include:
+
+- [ ] All tables from §9.2
+- [ ] `user_id` FK to `auth.users` on every table
+- [ ] `created_at`, `updated_at`, optional `deleted_at`
+- [ ] RLS enabled + policies on every table
+- [ ] Indexes from §9.3
+- [ ] Storage bucket `listening-audio` (private) + RLS policies
+- [ ] `updated_at` trigger function (recommended)
+
+#### Environment variables (app)
+
+```env
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+Never commit `.env`. Never use the **secret** key in the frontend.
 
 ---
 
@@ -827,6 +914,7 @@ Use OGG or lower bitrate to save space if needed.
 | Styling | Tailwind CSS |
 | Local storage | **Dexie.js** (IndexedDB) |
 | Backend | **Supabase** (Postgres + Auth + Storage) |
+| Schema management | **Supabase CLI** — migrations in `supabase/migrations/` |
 | Client | `@supabase/supabase-js` |
 | Server state / async | TanStack Query (optional, for Supabase fetches) |
 | Forms | React Hook Form + Zod (optional) |
@@ -848,7 +936,7 @@ Use OGG or lower bitrate to save space if needed.
 ## 17. Implementation Order (MVP)
 
 1. Project scaffold (PWA + TypeScript + Tailwind)
-2. Supabase project (EU) — tables, RLS, storage bucket
+2. **Supabase CLI** — `supabase init`, link project, `initial_schema` migration, `supabase db push`
 3. Auth — login screen, session persistence
 4. Dexie schema (mirrors Postgres + pendingChanges)
 5. CRUD — topics, items, sources, itemSources
@@ -1197,6 +1285,8 @@ When creating the project:
 - [ ] `vite-plugin-pwa`
 - [ ] Strict TypeScript
 - [ ] Placeholder feature folders: `dashboard`, `review`, `search`, `import`, `settings`, `learn`
+- [ ] `supabase init` + `supabase/migrations/` (see §9.6)
+- [ ] `.env.example` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
 
 ---
 
@@ -1216,6 +1306,9 @@ When creating the project:
 | 2026-07-11 | Dexie.js confirmed for local IndexedDB |
 | 2026-07-11 | Supabase EU region; Postgres + Storage + Auth + RLS |
 | 2026-07-11 | **React + Vite** chosen; modular architecture conventions (§22) |
+| 2026-07-13 | **Supabase CLI migrations** for all schema changes (ADR-012, §9.6) |
+| 2026-07-13 | Publishable API key (`VITE_SUPABASE_PUBLISHABLE_KEY`) instead of legacy anon key |
+| 2026-07-13 | **Agent must not run DB migrations** — owner applies `db push` manually (ADR-013) |
 
 ---
 
