@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-19 (MVP step 8 — TopicProgress computation)  
+> **Last updated:** 2026-07-20 (MVP step 9 — dashboard + smart study queue)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -18,7 +18,7 @@
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
 | CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
-| SRS + features | ⬜ In progress | Steps 8 done; steps 9–15 remain |
+| SRS + features | ⬜ In progress | Step 9 done; steps 10–15 remain |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -56,9 +56,12 @@
 - [x] **Review persistence** — append-only `Review` + `UserProgress` updates (synced)
 - [x] **TopicProgress** — `lib/topicProgress/` aggregates mastery %, `needsAttention` per topic
 - [x] **Topic progress UI** — mastery stats + “Needs attention” on `/topics`
+- [x] **Dashboard** — days until exam, overall + per-skill readiness, weak topics (`features/dashboard/`)
+- [x] **Smart study queue** — due + weakness boost (top 3 topics) + N5 recap (`buildReviewQueue.ts`)
+- [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`)
 
 ### Next up
-- [ ] Dashboard + “Study today” weak-topic boost (MVP step 9)
+- [ ] Global search (MVP step 10)
 
 ### Dev hint — test on phone before deploy
 
@@ -287,9 +290,9 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - [ ] Offline-capable (local IndexedDB)
 
 #### Progress & Planning
-- [ ] Dashboard — days until exam, readiness per skill, top weak topics
+- [ ] Dashboard — days until exam, readiness per skill, top weak topics — *done (step 9); weekly plan pending*
 - [ ] Topic status — new / learning / familiar / mastered — *per-item via SRS; per-topic via TopicProgress ✅*
-- [ ] "Study today" — SRS queue + recommended weak topics
+- [ ] "Study today" — SRS queue + recommended weak topics — *done (step 9)*
 - [ ] Exam date in settings (default: early December 2026)
 - [ ] Simple weekly plan from weaknesses + remaining time
 - [ ] Study session log (duration, skill, reviews, optional note)
@@ -307,8 +310,8 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - [ ] Audio: upload to Storage, playback via signed URL; optional local cache (v2)
 
 #### UI
-- [x] Dashboard — *placeholder page / route*
-- [x] Study today / review session — `/study` SM-2 session ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
+- [x] Dashboard — *real widgets (step 9)*
+- [x] Study today / review session — `/study` SM-2 + weakness + N5 recap ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 - [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete *(topic/source filters pending)*
 - [x] Global search — *placeholder page / route*
 - [x] Add — single item form on `/add` *(bulk import + CSV templates pending)*
@@ -1056,7 +1059,7 @@ Use OGG or lower bitrate to save space if needed.
 6. [x] Delta sync — pull/push + offline queue
 7. [x] SRS engine (**SM-2**) + review session UI — FSRS opt-in later ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 8. [x] TopicProgress computation — `lib/topicProgress/`, `/topics` mastery display
-9. [ ] Dashboard + "Study today" *(replace placeholders with real logic)*
+9. [x] Dashboard + "Study today" — readiness widgets, mixed review queue (§14.1)
 10. [ ] Global search
 11. [ ] Bulk import CSV
 12. [ ] Audio upload + playback (Storage)
@@ -1242,6 +1245,9 @@ All IO and domain logic without React:
 | `lib/sync/` | Pull, push, merge, pending queue |
 | `lib/srs/` | SM-2 scheduling (step 7); FSRS + readiness helper (phase 2) |
 | `lib/topicProgress/` | TopicProgress aggregation (step 8); `topNeedsAttentionTopics()` for study queue |
+| `lib/dashboard/` | Skill/overall readiness scores (step 9) |
+| `lib/study/` | Shared `loadStudyContext()` for dashboard + review queue |
+| `lib/settings/` | `ensureAppSettings()` defaults (exam date, n5RecapRatio) |
 | `lib/import/` | CSV parse, validate, duplicate check |
 | `lib/search/` | IndexedDB search queries |
 
@@ -1460,6 +1466,7 @@ const id = createId();
 | 2026-07-19 | SRS: SM-2 for MVP step 7; FSRS opt-in after review-history thresholds (ADR-014, §14.5) |
 | 2026-07-19 | Review session — SM-2 engine, `/study` UI, Review + UserProgress persistence (MVP step 7) |
 | 2026-07-19 | TopicProgress — per-topic mastery %, needsAttention rules, display on `/topics` (MVP step 8) |
+| 2026-07-20 | Dashboard + smart study queue — readiness widgets, weakness boost, N5 recap (MVP step 9) |
 
 ---
 

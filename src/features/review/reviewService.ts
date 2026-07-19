@@ -1,8 +1,6 @@
 import { getDeviceId } from '@/lib/db/deviceId';
 import {
-  listItemsByUser,
   listReviewsByItem,
-  listUserProgressByUser,
   upsertReview,
   upsertUserProgress,
 } from '@/lib/db';
@@ -10,21 +8,21 @@ import {
   addDays,
   applySm2Grade,
   createInitialProgressFields,
-  DAILY_REVIEW_LIMIT,
   gradeToAccuracy,
-  isSrsItemType,
 } from '@/lib/srs';
+import { loadStudyContext } from '@/lib/study';
+import {
+  buildReviewQueueFromContext,
+  countDueCards,
+  type ReviewQueueEntry,
+} from '@/features/review/buildReviewQueue';
 import type { LearningItem } from '@/types/learningItem';
 import type { Review, ReviewGrade } from '@/types/review';
 import type { UserProgress } from '@/types/userProgress';
 import { nowIso } from '@/utils/date';
 import { createId } from '@/utils/id';
 
-export type ReviewQueueEntry = {
-  item: LearningItem;
-  progress: UserProgress | null;
-  sortKey: string;
-};
+export type { ReviewQueueEntry } from '@/features/review/buildReviewQueue';
 
 export type ReviewSessionStats = {
   reviewed: number;
@@ -32,48 +30,13 @@ export type ReviewSessionStats = {
 };
 
 export async function buildReviewQueue(userId: string): Promise<ReviewQueueEntry[]> {
-  const [items, allProgress] = await Promise.all([
-    listItemsByUser(userId),
-    listUserProgressByUser(userId),
-  ]);
+  const context = await loadStudyContext(userId);
+  return buildReviewQueueFromContext(context);
+}
 
-  const srsItems = items.filter((item) => isSrsItemType(item.type));
-  const progressByItemId = new Map(allProgress.map((progress) => [progress.itemId, progress]));
-  const now = nowIso();
-  const entries: ReviewQueueEntry[] = [];
-
-  for (const progress of allProgress) {
-    if (progress.nextReviewAt > now) {
-      continue;
-    }
-
-    const item = srsItems.find((candidate) => candidate.id === progress.itemId);
-    if (!item) {
-      continue;
-    }
-
-    entries.push({
-      item,
-      progress,
-      sortKey: progress.nextReviewAt,
-    });
-  }
-
-  for (const item of srsItems) {
-    if (progressByItemId.has(item.id)) {
-      continue;
-    }
-
-    entries.push({
-      item,
-      progress: null,
-      sortKey: now,
-    });
-  }
-
-  return entries
-    .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
-    .slice(0, DAILY_REVIEW_LIMIT);
+export async function countDueReviewCards(userId: string): Promise<number> {
+  const context = await loadStudyContext(userId);
+  return countDueCards(context);
 }
 
 async function recentGradesForItem(itemId: string): Promise<ReviewGrade[]> {

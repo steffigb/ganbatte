@@ -5,7 +5,7 @@ export function StudyTodayPage() {
   return (
     <PageLayout
       title="Study today"
-      description="Review due vocabulary, kanji, and grammar with spaced repetition."
+      description="SRS due cards, weak-topic boost, and N5 recap."
     >
       <ReviewSession />
     </PageLayout>
