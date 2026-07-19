@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { routes } from '@/app/routes.config';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import type { ItemFormValues } from '@/features/items/itemFormTypes';
+import {
+  createBlankItemFormValues,
+  DEFAULT_ITEM_FORM_TYPE_LEVEL,
+  type ItemFormValues,
+} from '@/features/items/itemFormTypes';
 import { loadItemFormValues, saveItemWithRelations } from '@/features/items/itemService';
 import { ensureSyncMeta } from '@/lib/db';
 
@@ -13,13 +15,14 @@ export type SaveFeedback = {
 
 export function useItemForm(editId?: string) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const previousEditIdRef = useRef<string | undefined>(editId);
   const [initialValues, setInitialValues] = useState<ItemFormValues | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(editId));
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
+  const [createDefaults, setCreateDefaults] = useState(DEFAULT_ITEM_FORM_TYPE_LEVEL);
 
   useEffect(() => {
     if (!editId) {
@@ -91,7 +94,7 @@ export function useItemForm(editId?: string) {
 
       try {
         await ensureSyncMeta();
-        const itemId = await saveItemWithRelations(user.id, values);
+        await saveItemWithRelations(user.id, values);
 
         setSaveFeedback({
           type: 'success',
@@ -99,7 +102,8 @@ export function useItemForm(editId?: string) {
         });
 
         if (!editId) {
-          navigate(`${routes.add}?edit=${itemId}`, { replace: true });
+          setCreateDefaults({ type: values.type, level: values.level });
+          setFormResetKey((current) => current + 1);
         }
       } catch (cause) {
         setSaveFeedback({
@@ -110,11 +114,12 @@ export function useItemForm(editId?: string) {
         setIsSaving(false);
       }
     },
-    [user, editId, navigate],
+    [user, editId],
   );
 
   return {
-    initialValues: editId ? initialValues : null,
+    initialValues: editId ? initialValues : createBlankItemFormValues(createDefaults),
+    formResetKey,
     isLoading: Boolean(editId) && isLoading,
     loadError,
     saveFeedback,

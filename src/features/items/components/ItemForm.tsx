@@ -27,7 +27,7 @@ const levelOptions = [
 ];
 
 type ItemFormFieldsProps = {
-  initialValues: ItemFormValues | null;
+  initialValues: ItemFormValues;
   editId?: string;
   onSave: (values: ItemFormValues) => Promise<void>;
   isEditing: boolean;
@@ -43,16 +43,16 @@ function ItemFormFields({
 }: ItemFormFieldsProps) {
   const { topics } = useTopics();
   const { sources } = useSources();
-  const [type, setType] = useState<ItemType>(initialValues?.type ?? 'word');
-  const [level, setLevel] = useState<JlptLevel>(initialValues?.level ?? 'N4');
-  const [japanese, setJapanese] = useState(initialValues?.japanese ?? '');
-  const [reading, setReading] = useState(initialValues?.reading ?? '');
-  const [meaning, setMeaning] = useState(initialValues?.meaning ?? '');
-  const [notes, setNotes] = useState(initialValues?.notes ?? '');
-  const [topicIds, setTopicIds] = useState<string[]>(initialValues?.topicIds ?? []);
-  const [sourceIds, setSourceIds] = useState<string[]>(initialValues?.sourceIds ?? []);
+  const [type, setType] = useState<ItemType>(initialValues.type);
+  const [level, setLevel] = useState<JlptLevel>(initialValues.level);
+  const [japanese, setJapanese] = useState(initialValues.japanese);
+  const [reading, setReading] = useState(initialValues.reading ?? '');
+  const [meaning, setMeaning] = useState(initialValues.meaning);
+  const [notes, setNotes] = useState(initialValues.notes ?? '');
+  const [topicIds, setTopicIds] = useState<string[]>(initialValues.topicIds);
+  const [sourceIds, setSourceIds] = useState<string[]>(initialValues.sourceIds);
   const [sourceReferences, setSourceReferences] = useState<Record<string, string>>(
-    initialValues?.sourceReferences ?? {},
+    initialValues.sourceReferences,
   );
 
   function toggleTopic(topicId: string) {
@@ -247,6 +247,7 @@ function ItemFormFields({
 type ItemFormProps = {
   editId?: string;
   initialValues: ItemFormValues | null;
+  formResetKey: number;
   isLoading: boolean;
   loadError: string | null;
   saveFeedback: SaveFeedback | null;
@@ -258,6 +259,7 @@ type ItemFormProps = {
 export function ItemForm({
   editId,
   initialValues,
+  formResetKey,
   isLoading,
   loadError,
   saveFeedback,
@@ -273,13 +275,17 @@ export function ItemForm({
     return <FormAlert variant="error" message={loadError} />;
   }
 
+  if (!initialValues) {
+    return null;
+  }
+
   return (
     <div className="space-y-4">
       {saveFeedback ? (
         <FormAlert variant={saveFeedback.type} message={saveFeedback.message} />
       ) : null}
       <ItemFormFields
-        key={editId ?? 'new'}
+        key={editId ?? `new-${formResetKey}`}
         initialValues={initialValues}
         editId={editId}
         onSave={onSave}

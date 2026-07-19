@@ -12,3 +12,24 @@ export type ItemFormValues = {
   sourceIds: string[];
   sourceReferences: Record<string, string>;
 };
+
+export const DEFAULT_ITEM_FORM_TYPE_LEVEL: Pick<ItemFormValues, 'type' | 'level'> = {
+  type: 'word',
+  level: 'N4',
+};
+
+export function createBlankItemFormValues(
+  defaults: Pick<ItemFormValues, 'type' | 'level'> = DEFAULT_ITEM_FORM_TYPE_LEVEL,
+): ItemFormValues {
+  return {
+    type: defaults.type,
+    level: defaults.level,
+    japanese: '',
+    reading: '',
+    meaning: '',
+    notes: '',
+    topicIds: [],
+    sourceIds: [],
+    sourceReferences: {},
+  };
+}

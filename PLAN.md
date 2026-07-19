@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-19 (MVP step 6 complete; multi-device LAN dev verified)  
+> **Last updated:** 2026-07-19 (MVP step 7 — SM-2 review session on `/study`)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -18,7 +18,7 @@
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
 | CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
-| SRS + features | ⬜ Next | MVP steps 7–15 |
+| SRS + features | ⬜ In progress | Step 7 done; steps 8–15 remain |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -51,9 +51,12 @@
 - [x] **Sync status UI** — last synced, pending count, offline/error states
 - [x] **ID helper** — `createId()` in `src/utils/id.ts` (see [§22.19](#2219-id-generation-uuids))
 - [x] **Multi-device dev** — sync verified phone ↔ laptop via `npm run dev -- --host` (same Wi‑Fi)
+- [x] **SM-2 engine** — `lib/srs/sm2.ts` (interval, ease, mastery)
+- [x] **Review session** — `/study` queue, flip card, grade buttons, session summary
+- [x] **Review persistence** — append-only `Review` + `UserProgress` updates (synced)
 
 ### Next up
-- [ ] SRS engine + review session UI (MVP step 7)
+- [ ] TopicProgress computation (MVP step 8)
 
 ### Dev hint — test on phone before deploy
 
@@ -203,6 +206,17 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 **Rationale:** Production database access stays under the owner's control only.  
 **Owner runs:** `supabase db push`, `supabase migration list`, and all remote apply/inspect steps manually.
 
+### ADR-014: SRS phased adoption (SM-2 → FSRS)
+**Decision:** Ship MVP step 7 with **SM-2**. Persist every review in **`Review`** (append-only) from day one. Add **FSRS** later when review history supports meaningful optimization; user **opts in** via Settings (no silent auto-switch).
+
+**Rationale:** SM-2 matches current `UserProgress` fields (`intervalDays`, `easeFactor`, `repetitions`) and is quick to ship. FSRS needs review logs for parameter optimization; the `Review` table is the migration input. Phased rollout avoids mid-prep scheduling surprises.
+
+**Implementation notes:**
+- Step 7: `lib/srs/sm2.ts` + `reviewService` + `/study` UI
+- Phase 2: `lib/srs/fsrs.ts` (prefer `ts-fsrs`) + SM-2→FSRS migration helper
+- Optimizer: `@open-spaced-repetition/binding` or export reviews → optimize offline
+- Settings: `srsAlgorithm: 'sm2' | 'fsrs'`; optional `fsrsParams` after optimization; readiness hints per [§14.5](#145-srs-algorithm--fsrs-migration)
+
 ---
 
 ## 4. Core Principles
@@ -255,7 +269,7 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - [ ] Levels: N5, N4
 - [ ] Topics (optionally hierarchical) — *flat list CRUD done; hierarchy pending*
 - [ ] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done*
-- [ ] SRS (SM-2 or FSRS) for vocabulary, kanji, grammar
+- [ ] SRS (**SM-2** ✅ step 7; **FSRS** opt-in later — ADR-014) for vocabulary, kanji, grammar
 - [x] Manual single-item create/edit — `/add`, edit via `?edit=`, browse `/learn/:skill`
 - [ ] Bulk import — CSV/TSV, paste text, column mapping
 - [x] Source metadata — multiple sources per item — *checkbox picker + per-source reference*
@@ -292,7 +306,7 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 
 #### UI
 - [x] Dashboard — *placeholder page / route*
-- [x] Study today / review session — *placeholder page / route*
+- [x] Study today / review session — `/study` SM-2 session ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 - [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete *(topic/source filters pending)*
 - [x] Global search — *placeholder page / route*
 - [x] Add — single item form on `/add` *(bulk import + CSV templates pending)*
@@ -547,6 +561,9 @@ AppSettings {
   n5RecapRatio: number            // 0.2 = 20%
   locale: "de"
   theme: "light" | "dark" | "system"
+  srsAlgorithm?: "sm2" | "fsrs"   // default "sm2"; user opts in to FSRS (ADR-014)
+  fsrsParams?: string             // JSON blob after optimizer run (phase 2)
+  fsrsHintDismissedAt?: string    // ISO; dismiss FSRS readiness banner (phase 2)
   updatedAt: string
 }
 ```
@@ -921,6 +938,39 @@ Date | Duration | Skill | Topics | Items reviewed | Accuracy | Notes
 
 Aggregate: item → topic → skill → level → overall readiness
 
+### 14.5 SRS algorithm & FSRS migration
+
+**v1 (step 7):** SM-2 for vocabulary, kanji, grammar. Every grade writes a `Review` row (append-only).
+
+**FSRS migration (phase 2, after enough history):**
+1. User sees readiness hint when thresholds met (table below)
+2. User enables FSRS in Settings (or dismisses hint)
+3. Migrate `UserProgress` from SM-2 state → FSRS card state (heuristic mapping; edge cases may re-enter learning)
+4. Optionally run parameter optimizer on full `Review` export
+
+**Note:** FSRS can run with **default parameters** before optimization; review history is mainly for **personalized** FSRS weights.
+
+**FSRS readiness thresholds** (single user; tune after real usage):
+
+| Level | Condition | UI hint |
+|-------|-----------|---------|
+| **Info** | ≥ 100 total reviews | "FSRS available with default settings" |
+| **Recommended** | ≥ 400 total reviews **and** ≥ 50 items with ≥ 3 reviews each | "Enough history to optimize FSRS for your study patterns" |
+| **Strong** | ≥ 1,000 total reviews | "FSRS optimization should be stable" |
+
+**Hint rules:**
+- Show in **Settings** (optional one-time Dashboard banner at **Recommended**)
+- Dismissible; store `fsrsHintDismissedAt` in `AppSettings`
+- Do **not** auto-switch algorithm — user confirms migration
+- Re-show hint if reviews grow past next tier (e.g. 100 → 400) unless dismissed for that tier
+
+**Readiness query (local, `lib/srs/fsrsReadiness.ts`):**
+- `totalReviews` = count of `reviews` for current user
+- `itemsWithHistory` = count of distinct `itemId` with ≥ 3 reviews
+- Return `'none' | 'info' | 'recommended' | 'strong'` for UI
+
+**Constants (defaults):** `FSRS_HINT_INFO = 100`, `FSRS_HINT_RECOMMENDED_REVIEWS = 400`, `FSRS_HINT_RECOMMENDED_ITEMS = 50`, `FSRS_HINT_STRONG = 1000`
+
 ---
 
 ## 15. Audio (Listening)
@@ -979,7 +1029,7 @@ Use OGG or lower bitrate to save space if needed.
 | Client | `@supabase/supabase-js` |
 | Server state / async | TanStack Query (optional, for Supabase fetches) |
 | Forms | React Hook Form + Zod (optional) |
-| SRS | fsrs.js or SM-2 |
+| SRS | **SM-2** (step 7); **FSRS** via `ts-fsrs` when user opts in ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs)) |
 | PWA | vite-plugin-pwa |
 | Search | Local Dexie filter + optional Fuse.js |
 | Audio playback | HTML5 `<audio>` + Supabase signed URLs |
@@ -1002,7 +1052,7 @@ Use OGG or lower bitrate to save space if needed.
 4. [x] Dexie schema (mirrors Postgres + pendingChanges)
 5. [x] CRUD — topics, items, sources, itemSources
 6. [x] Delta sync — pull/push + offline queue
-7. [ ] SRS engine + review session UI
+7. [x] SRS engine (**SM-2**) + review session UI — FSRS opt-in later ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 8. [ ] TopicProgress computation
 9. [ ] Dashboard + "Study today" *(replace placeholders with real logic)*
 10. [ ] Global search
@@ -1052,7 +1102,7 @@ Supabase is primary; JSON export is additional safety net.
 ## 21. Open Questions / Future Considerations
 
 - [x] Final framework choice: **React + Vite** (see ADR-011, §22)
-- [ ] SRS algorithm: SM-2 vs FSRS (recommend evaluating FSRS)
+- [x] SRS algorithm: **SM-2 first** (step 7); **FSRS opt-in** when review history meets thresholds ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs), [§14.5](#145-srs-algorithm--fsrs-migration))
 - [x] Junction table `item_topics` vs `topicIds[]` array on item — **`item_topics` table in migrations**
 - [ ] Signed URL expiry duration for audio
 - [ ] Default exam date exact day (early December 2026 — set when JLPT date confirmed)
@@ -1188,7 +1238,7 @@ All IO and domain logic without React:
 | `lib/db/` | Dexie schema, repositories (`itemRepository.ts`) |
 | `lib/supabase/` | Client init, auth helpers |
 | `lib/sync/` | Pull, push, merge, pending queue |
-| `lib/srs/` | SM-2 / FSRS scheduling |
+| `lib/srs/` | SM-2 scheduling (step 7); FSRS + readiness helper (phase 2) |
 | `lib/import/` | CSV parse, validate, duplicate check |
 | `lib/search/` | IndexedDB search queries |
 
@@ -1404,6 +1454,8 @@ const id = createId();
 | 2026-07-19 | CRUD refinements — multi-source picker, per-source reference, form success/error feedback |
 | 2026-07-19 | Delta sync — pull/push engine, merge rules, SyncProvider, sync status UI (MVP step 6) |
 | 2026-07-19 | Mobile LAN dev — `createId()` helper replaces direct `crypto.randomUUID()` (§22.19); sync verified phone ↔ laptop |
+| 2026-07-19 | SRS: SM-2 for MVP step 7; FSRS opt-in after review-history thresholds (ADR-014, §14.5) |
+| 2026-07-19 | Review session — SM-2 engine, `/study` UI, Review + UserProgress persistence (MVP step 7) |
 
 ---
 

@@ -19,6 +19,10 @@ export async function getUserProgressByItem(
     .first();
 }
 
+export async function listUserProgressByUser(userId: string): Promise<UserProgress[]> {
+  return db.userProgress.where('userId').equals(userId).toArray();
+}
+
 export async function listDueProgress(
   userId: string,
   before: string = new Date().toISOString(),
