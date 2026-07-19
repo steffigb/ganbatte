@@ -1,0 +1,291 @@
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { routes } from '@/app/routes.config';
+import { Button } from '@/components/ui/Button';
+import { FormAlert } from '@/components/ui/FormAlert';
+import { Input } from '@/components/ui/Input';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
+import type { ItemFormValues } from '@/features/items/itemFormTypes';
+import type { SaveFeedback } from '@/features/items/hooks/useItemForm';
+import { useSources } from '@/features/sources';
+import { useTopics } from '@/features/topics';
+import type { ItemType, JlptLevel } from '@/types/domain';
+
+const typeOptions = [
+  { value: 'word', label: 'Word (vocabulary)' },
+  { value: 'kanji', label: 'Kanji' },
+  { value: 'grammar', label: 'Grammar' },
+  { value: 'reading', label: 'Reading' },
+  { value: 'listening', label: 'Listening' },
+];
+
+const levelOptions = [
+  { value: 'N4', label: 'N4' },
+  { value: 'N5', label: 'N5' },
+];
+
+type ItemFormFieldsProps = {
+  initialValues: ItemFormValues | null;
+  editId?: string;
+  onSave: (values: ItemFormValues) => Promise<void>;
+  isEditing: boolean;
+  isSaving: boolean;
+};
+
+function ItemFormFields({
+  initialValues,
+  editId,
+  onSave,
+  isEditing,
+  isSaving,
+}: ItemFormFieldsProps) {
+  const { topics } = useTopics();
+  const { sources } = useSources();
+  const [type, setType] = useState<ItemType>(initialValues?.type ?? 'word');
+  const [level, setLevel] = useState<JlptLevel>(initialValues?.level ?? 'N4');
+  const [japanese, setJapanese] = useState(initialValues?.japanese ?? '');
+  const [reading, setReading] = useState(initialValues?.reading ?? '');
+  const [meaning, setMeaning] = useState(initialValues?.meaning ?? '');
+  const [notes, setNotes] = useState(initialValues?.notes ?? '');
+  const [topicIds, setTopicIds] = useState<string[]>(initialValues?.topicIds ?? []);
+  const [sourceIds, setSourceIds] = useState<string[]>(initialValues?.sourceIds ?? []);
+  const [sourceReferences, setSourceReferences] = useState<Record<string, string>>(
+    initialValues?.sourceReferences ?? {},
+  );
+
+  function toggleTopic(topicId: string) {
+    setTopicIds((current) =>
+      current.includes(topicId)
+        ? current.filter((id) => id !== topicId)
+        : [...current, topicId],
+    );
+  }
+
+  function toggleSource(sourceId: string) {
+    setSourceIds((current) => {
+      const isSelected = current.includes(sourceId);
+      if (isSelected) {
+        setSourceReferences((references) => {
+          const next = { ...references };
+          delete next[sourceId];
+          return next;
+        });
+        return current.filter((id) => id !== sourceId);
+      }
+      return [...current, sourceId];
+    });
+  }
+
+  function setSourceReference(sourceId: string, reference: string) {
+    setSourceReferences((current) => ({
+      ...current,
+      [sourceId]: reference,
+    }));
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    await onSave({
+      id: editId,
+      type,
+      level,
+      japanese,
+      reading: reading || undefined,
+      meaning,
+      notes: notes || undefined,
+      topicIds,
+      sourceIds,
+      sourceReferences,
+    });
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Select
+          id="item-type"
+          label="Type"
+          value={type}
+          options={typeOptions}
+          onChange={(event) => setType(event.target.value as ItemType)}
+        />
+        <Select
+          id="item-level"
+          label="Level"
+          value={level}
+          options={levelOptions}
+          onChange={(event) => setLevel(event.target.value as JlptLevel)}
+        />
+      </div>
+      <Input
+        id="item-japanese"
+        label="Japanese"
+        required
+        value={japanese}
+        onChange={(event) => setJapanese(event.target.value)}
+      />
+      <Input
+        id="item-reading"
+        label="Reading (optional)"
+        value={reading}
+        onChange={(event) => setReading(event.target.value)}
+      />
+      <Input
+        id="item-meaning"
+        label="Meaning"
+        required
+        value={meaning}
+        onChange={(event) => setMeaning(event.target.value)}
+      />
+      <Textarea
+        id="item-notes"
+        label="Notes (optional)"
+        value={notes}
+        onChange={(event) => setNotes(event.target.value)}
+      />
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Topics (optional)
+        </legend>
+        {topics.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            No topics yet.{' '}
+            <Link to={routes.topics} className="underline">
+              Create topics
+            </Link>{' '}
+            first.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {topics.map((topic) => (
+              <li key={topic.id}>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={topicIds.includes(topic.id)}
+                    onChange={() => toggleTopic(topic.id)}
+                    className="rounded border-slate-300"
+                  />
+                  <span>
+                    {topic.name}{' '}
+                    <span className="text-slate-500">
+                      ({topic.level} · {topic.skill})
+                    </span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </fieldset>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Sources (optional)
+        </legend>
+        {sources.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            No sources yet.{' '}
+            <Link to={routes.topics} className="underline">
+              Create sources
+            </Link>{' '}
+            first.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {sources.map((source) => {
+              const isSelected = sourceIds.includes(source.id);
+
+              return (
+                <li key={source.id} className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSource(source.id)}
+                      className="rounded border-slate-300"
+                    />
+                    <span>
+                      {source.label}
+                      {source.type ? (
+                        <span className="text-slate-500"> ({source.type})</span>
+                      ) : null}
+                    </span>
+                  </label>
+                  {isSelected ? (
+                    <Input
+                      id={`item-source-ref-${source.id}`}
+                      label="Reference (optional)"
+                      value={sourceReferences[source.id] ?? ''}
+                      onChange={(event) =>
+                        setSourceReference(source.id, event.target.value)
+                      }
+                      placeholder="e.g. Unit 3, L15"
+                    />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </fieldset>
+
+      <Button type="submit" disabled={isSaving}>
+        {isSaving ? 'Saving…' : isEditing ? 'Update item' : 'Save item'}
+      </Button>
+    </form>
+  );
+}
+
+type ItemFormProps = {
+  editId?: string;
+  initialValues: ItemFormValues | null;
+  isLoading: boolean;
+  loadError: string | null;
+  saveFeedback: SaveFeedback | null;
+  isSaving: boolean;
+  onSave: (values: ItemFormValues) => Promise<void>;
+  isEditing: boolean;
+};
+
+export function ItemForm({
+  editId,
+  initialValues,
+  isLoading,
+  loadError,
+  saveFeedback,
+  isSaving,
+  onSave,
+  isEditing,
+}: ItemFormProps) {
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (loadError) {
+    return <FormAlert variant="error" message={loadError} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {saveFeedback ? (
+        <FormAlert variant={saveFeedback.type} message={saveFeedback.message} />
+      ) : null}
+      <ItemFormFields
+        key={editId ?? 'new'}
+        initialValues={initialValues}
+        editId={editId}
+        onSave={onSave}
+        isEditing={isEditing}
+        isSaving={isSaving}
+      />
+    </div>
+  );
+}

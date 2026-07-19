@@ -1,1 +1,1 @@
-// Learn feature — browse items by skill (MVP step 5)
+export { ItemList, useItems } from '@/features/items';

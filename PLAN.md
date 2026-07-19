@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-13 (scaffold + Supabase schema complete)  
+> **Last updated:** 2026-07-19 (MVP step 5 — CRUD UI complete)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -15,8 +15,9 @@
 | Supabase project + migrations | ✅ Done | EU project; `initial_schema` + `complete_schema` applied |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
-| Dexie + local data | ⬜ Next | §10 schema |
-| Sync, SRS, features | ⬜ Pending | MVP steps 5–15 |
+| Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
+| CRUD UI | ✅ Done | Topics, sources, items (+ relations); local-only |
+| Sync, SRS, features | ⬜ Next | MVP step 6 — delta sync |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -32,12 +33,22 @@
 - [x] Feature folder stubs (`dashboard`, `review`, `search`, `import`, `settings`, `learn`)
 - [x] Supabase client (`src/lib/supabase/client.ts`)
 - [x] Auth — `AuthProvider`, login form, `RequireAuth`, session persistence
-- [x] Dexie dependency installed; schema not yet implemented
+- [x] Shared UI primitives — `Button`, `Input`, `Select`, `Textarea`, `FormAlert` (`src/components/ui/`)
+- [x] Domain types mirroring §8 (`src/types/`)
+- [x] Dexie schema — 12 stores mirroring Postgres + `syncMeta` / `pendingChanges` (`src/lib/db/`)
+- [x] Repository layer — upsert/list/get per entity; writes enqueue `pendingChanges`
+- [x] Device ID + sync metadata helpers (`ensureSyncMeta`, `getDeviceId`)
 - [x] `README.md` with setup instructions
+- [x] **Topics CRUD** — `features/topics/`; create/list/delete on `/topics`
+- [x] **Sources CRUD** — `features/sources/`; create/list/delete on `/topics`
+- [x] **Items CRUD** — `features/items/`; add/edit (`/add`, `?edit=`), browse by skill/level (`/learn/:skill`), soft-delete
+- [x] **Item relations** — multi-topic + multi-source links (`itemTopics`, `itemSources`); per-source reference
+- [x] **Duplicate guard** — block save when same `type` + `japanese` already exists
+- [x] **Form feedback** — success/error alerts on item, topic, and source forms
 
 ### Next up
-- [ ] Dexie schema mirroring Postgres + `pendingChanges`
-- [ ] CRUD for topics, items, sources
+- [ ] Delta sync — pull/push + offline queue (MVP step 6)
+- [ ] Sync status UI — surface pending changes count from `pendingChanges`
 
 ---
 
@@ -109,7 +120,7 @@
 - [ ] N5 recap targets **actual gaps only**, not full N5 re-learn
 - [ ] Full offline learning works; sync runs automatically when online
 - [x] No Google dependency
-- [x] Only the owner has data access (Supabase RLS) — *DB policies in migrations; app auth pending*
+- [x] Only the owner has data access (Supabase RLS + app auth via `RequireAuth`)
 - [ ] Sources are optional metadata; JLPT structure remains primary
 
 ---
@@ -229,20 +240,20 @@
 #### Content & Learning
 - [ ] Five skills: Vocabulary, Kanji, Grammar, Reading, Listening
 - [ ] Levels: N5, N4
-- [ ] Topics (optionally hierarchical)
-- [ ] Learning Items: word, kanji, grammar (reading/listening simplified in v1)
+- [ ] Topics (optionally hierarchical) — *flat list CRUD done; hierarchy pending*
+- [ ] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done*
 - [ ] SRS (SM-2 or FSRS) for vocabulary, kanji, grammar
-- [ ] Manual single-item create/edit
+- [x] Manual single-item create/edit — `/add`, edit via `?edit=`, browse `/learn/:skill`
 - [ ] Bulk import — CSV/TSV, paste text, column mapping
-- [ ] Source metadata — multiple sources per item
-- [ ] Duplicate handling — skip / attach source / update
+- [x] Source metadata — multiple sources per item — *checkbox picker + per-source reference*
+- [ ] Duplicate handling — skip / attach source / update — *manual create: block duplicate; import flow pending*
 - [ ] Import preview with validation and error list
 
 #### Search
 - [ ] Global search across vocabulary, kanji, grammar, topics, tags, sources
 - [ ] Filters: type, level, skill, mastery status
 - [ ] Grouped results (Topics / Grammar / Vocabulary / Kanji)
-- [ ] Duplicate hint on manual create
+- [ ] Duplicate hint on manual create — *duplicate blocked on save; inline hint pending*
 - [ ] Duplicate display in bulk import ("already exists")
 - [ ] Offline-capable (local IndexedDB)
 
@@ -259,7 +270,7 @@
 - [x] Supabase Storage — bucket for listening audio (*`listening-audio` in migrations*)
 - [x] Supabase Auth — single private account (email + password)
 - [x] Row Level Security — own data only (*policies in migrations*)
-- [ ] Dexie.js / IndexedDB — local cache + offline operation
+- [x] Dexie.js / IndexedDB — schema, repositories, pending queue, CRUD UI wired *(sync pending)*
 - [ ] Delta sync — push/pull changed records since `lastSyncAt`
 - [ ] Sync on app start and after study sessions
 - [ ] Sync status UI — last synced, pending changes, offline indicator (*placeholder badge only*)
@@ -269,9 +280,10 @@
 #### UI
 - [x] Dashboard — *placeholder page / route*
 - [x] Study today / review session — *placeholder page / route*
-- [x] Browse by skill / level / topic (+ source filter) — *placeholder `/learn/:skill`*
+- [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete *(topic/source filters pending)*
 - [x] Global search — *placeholder page / route*
-- [x] Add — single + bulk import (+ CSV templates) — *placeholder pages; CSV templates pending*
+- [x] Add — single item form on `/add` *(bulk import + CSV templates pending)*
+- [x] Topics & sources management — `/topics`
 - [x] Settings (exam date, sync, login) — *placeholder page; settings logic pending*
 - [ ] Theme: light / dark / system
 
@@ -974,8 +986,8 @@ Use OGG or lower bitrate to save space if needed.
 1. [x] Project scaffold (PWA + TypeScript + Tailwind)
 2. [x] **Supabase CLI** — `supabase init`, link project, migrations, `supabase db push`
 3. [x] Auth — login screen, session persistence
-4. [ ] Dexie schema (mirrors Postgres + pendingChanges)
-5. [ ] CRUD — topics, items, sources, itemSources
+4. [x] Dexie schema (mirrors Postgres + pendingChanges)
+5. [x] CRUD — topics, items, sources, itemSources
 6. [ ] Delta sync — pull/push + offline queue
 7. [ ] SRS engine + review session UI
 8. [ ] TopicProgress computation
@@ -1347,6 +1359,9 @@ When creating the project:
 | 2026-07-13 | **Agent must not run DB migrations** — owner applies `db push` manually (ADR-013) |
 | 2026-07-13 | React + Vite PWA scaffold complete (§22.18); placeholder routes for all screens |
 | 2026-07-13 | Auth implemented — login form, session persistence, `RequireAuth`, sign out |
+| 2026-07-19 | Dexie local data layer — domain types, 12-store schema, repositories, `pendingChanges` queue (MVP step 4) |
+| 2026-07-19 | CRUD UI — topics, sources, items with relations; `/topics`, `/add`, `/learn/:skill` (MVP step 5) |
+| 2026-07-19 | CRUD refinements — multi-source picker, per-source reference, form success/error feedback |
 
 ---
 
