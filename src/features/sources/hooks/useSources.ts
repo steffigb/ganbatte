@@ -8,6 +8,7 @@ import {
 } from '@/lib/db';
 import type { Source, SourceType } from '@/types/source';
 import { nowIso } from '@/utils/date';
+import { createId } from '@/utils/id';
 
 export type CreateSourceInput = {
   label: string;
@@ -67,7 +68,7 @@ export function useSources() {
 
       const timestamp = nowIso();
       await upsertSource({
-        id: crypto.randomUUID(),
+        id: createId(),
         userId: user.id,
         label: input.label.trim(),
         type: input.type,

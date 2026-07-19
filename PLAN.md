@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-19 (MVP step 5 — CRUD UI complete)  
+> **Last updated:** 2026-07-19 (MVP step 6 complete; multi-device LAN dev verified)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -16,8 +16,9 @@
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
-| CRUD UI | ✅ Done | Topics, sources, items (+ relations); local-only |
-| Sync, SRS, features | ⬜ Next | MVP step 6 — delta sync |
+| CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
+| Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
+| SRS + features | ⬜ Next | MVP steps 7–15 |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -45,10 +46,22 @@
 - [x] **Item relations** — multi-topic + multi-source links (`itemTopics`, `itemSources`); per-source reference
 - [x] **Duplicate guard** — block save when same `type` + `japanese` already exists
 - [x] **Form feedback** — success/error alerts on item, topic, and source forms
+- [x] **Delta sync engine** — `lib/sync/` pull/push, row mappers, merge by `updatedAt`
+- [x] **Sync provider** — auto-sync on login, online reconnect, manual “Sync now”
+- [x] **Sync status UI** — last synced, pending count, offline/error states
+- [x] **ID helper** — `createId()` in `src/utils/id.ts` (see [§22.19](#2219-id-generation-uuids))
+- [x] **Multi-device dev** — sync verified phone ↔ laptop via `npm run dev -- --host` (same Wi‑Fi)
 
 ### Next up
-- [ ] Delta sync — pull/push + offline queue (MVP step 6)
-- [ ] Sync status UI — surface pending changes count from `pendingChanges`
+- [ ] SRS engine + review session UI (MVP step 7)
+
+### Dev hint — test on phone before deploy
+
+```bash
+npm run dev -- --host
+```
+
+Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a device on the same Wi‑Fi. Supabase is already cloud-hosted — log in with the same account on both devices and use **Sync now**. For HTTPS/PWA install testing, use a tunnel (e.g. `cloudflared tunnel --url http://localhost:5173`).
 
 ---
 
@@ -270,10 +283,10 @@
 - [x] Supabase Storage — bucket for listening audio (*`listening-audio` in migrations*)
 - [x] Supabase Auth — single private account (email + password)
 - [x] Row Level Security — own data only (*policies in migrations*)
-- [x] Dexie.js / IndexedDB — schema, repositories, pending queue, CRUD UI wired *(sync pending)*
-- [ ] Delta sync — push/pull changed records since `lastSyncAt`
-- [ ] Sync on app start and after study sessions
-- [ ] Sync status UI — last synced, pending changes, offline indicator (*placeholder badge only*)
+- [x] Dexie.js / IndexedDB — schema, repositories, pending queue, CRUD UI wired
+- [x] Delta sync — push/pull changed records since `lastSyncAt`
+- [x] Sync on app start (after login) and on reconnect
+- [x] Sync status UI — last synced, pending changes, offline indicator
 - [ ] JSON export/import — local backup (additional)
 - [ ] Audio: upload to Storage, playback via signed URL; optional local cache (v2)
 
@@ -988,7 +1001,7 @@ Use OGG or lower bitrate to save space if needed.
 3. [x] Auth — login screen, session persistence
 4. [x] Dexie schema (mirrors Postgres + pendingChanges)
 5. [x] CRUD — topics, items, sources, itemSources
-6. [ ] Delta sync — pull/push + offline queue
+6. [x] Delta sync — pull/push + offline queue
 7. [ ] SRS engine + review session UI
 8. [ ] TopicProgress computation
 9. [ ] Dashboard + "Study today" *(replace placeholders with real logic)*
@@ -1278,6 +1291,7 @@ Components and hooks never touch Dexie tables directly — go through repositori
 - Code-split by route (`React.lazy`)
 - PWA config in `vite.config.ts` — cache static assets; **do not** cache Supabase API blindly
 - Dexie and sync logic stay out of service worker — SW for assets only in v1
+- **LAN dev (phone/tablet):** `npm run dev -- --host` — use the printed Network URL; plain HTTP is fine for CRUD/sync testing (see [§22.19](#2219-id-generation-uuids) for UUID caveat)
 
 ### 22.16 Anti-patterns (do not)
 
@@ -1288,6 +1302,7 @@ Components and hooks never touch Dexie tables directly — go through repositori
 - ❌ Circular imports between features — extract shared code upward
 - ❌ Giant `types.ts` with every entity — split by domain
 - ❌ Premature abstraction (don't build a generic `<DataTable />` until 3 tables need it)
+- ❌ `crypto.randomUUID()` in app code — use `createId()` from `@/utils/id` ([§22.19](#2219-id-generation-uuids))
 
 ### 22.17 Example: review feature split
 
@@ -1336,6 +1351,31 @@ When creating the project:
 - [x] `supabase init` + `supabase/migrations/` (see §9.6)
 - [x] `.env.example` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
 
+### 22.19 ID generation (UUIDs)
+
+**Rule:** Never call `crypto.randomUUID()` directly in application code. Always use:
+
+```typescript
+import { createId } from '@/utils/id';
+
+const id = createId();
+```
+
+| Context | Use |
+|---------|-----|
+| New entity IDs (topics, items, sources, links, reviews, …) | `createId()` |
+| Device ID (`lib/db/deviceId.ts`) | `createId()` via `createDeviceId()` |
+
+**Why:** `crypto.randomUUID()` requires a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) (HTTPS or `localhost`). It is **not available** on mobile browsers when testing over **HTTP on a LAN IP** (e.g. `http://192.168.1.42:5173` from `npm run dev -- --host`). Without a fallback, saves and sync fail with `crypto.randomUUID is not a function`.
+
+**Implementation (`src/utils/id.ts`):**
+
+1. `crypto.randomUUID()` when available (desktop `localhost`, deployed HTTPS)
+2. Else `crypto.getRandomValues()` + UUID v4 formatting
+3. Else `Math.random` fallback (dev-only edge case)
+
+**When native `crypto.randomUUID` works:** production deploy (HTTPS), `localhost`, and HTTPS tunnels during dev.
+
 ---
 
 ## Appendix A: Chat decision log
@@ -1362,6 +1402,8 @@ When creating the project:
 | 2026-07-19 | Dexie local data layer — domain types, 12-store schema, repositories, `pendingChanges` queue (MVP step 4) |
 | 2026-07-19 | CRUD UI — topics, sources, items with relations; `/topics`, `/add`, `/learn/:skill` (MVP step 5) |
 | 2026-07-19 | CRUD refinements — multi-source picker, per-source reference, form success/error feedback |
+| 2026-07-19 | Delta sync — pull/push engine, merge rules, SyncProvider, sync status UI (MVP step 6) |
+| 2026-07-19 | Mobile LAN dev — `createId()` helper replaces direct `crypto.randomUUID()` (§22.19); sync verified phone ↔ laptop |
 
 ---
 

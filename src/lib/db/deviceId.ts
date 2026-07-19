@@ -1,6 +1,7 @@
 import { db } from '@/lib/db/database';
 import { DB_SCHEMA_VERSION, SYNC_META_ID } from '@/lib/db/constants';
 import type { SyncMeta } from '@/types/sync';
+import { createId } from '@/utils/id';
 
 const DEVICE_ID_KEY = 'ganbatte:deviceId';
 
@@ -21,7 +22,7 @@ function persistDeviceId(deviceId: string): void {
 }
 
 export function createDeviceId(): string {
-  return crypto.randomUUID();
+  return createId();
 }
 
 export async function getDeviceId(): Promise<string> {

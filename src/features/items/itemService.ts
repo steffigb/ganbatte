@@ -14,6 +14,7 @@ import {
 import type { ItemFormValues } from '@/features/items/itemFormTypes';
 import type { LearningItem } from '@/types/learningItem';
 import { nowIso } from '@/utils/date';
+import { createId } from '@/utils/id';
 import { skillForItemType } from '@/utils/itemHelpers';
 
 export async function loadItemFormValues(
@@ -72,7 +73,7 @@ async function syncItemTopics(
 
     const timestamp = nowIso();
     await upsertItemTopic({
-      id: crypto.randomUUID(),
+      id: createId(),
       userId,
       itemId,
       topicId,
@@ -117,7 +118,7 @@ async function syncItemSources(
     }
 
     await upsertItemSource({
-      id: crypto.randomUUID(),
+      id: createId(),
       userId,
       itemId,
       sourceId,
@@ -145,7 +146,7 @@ export async function saveItemWithRelations(
   }
 
   const timestamp = nowIso();
-  const itemId = values.id ?? crypto.randomUUID();
+  const itemId = values.id ?? createId();
   const existing = values.id ? await getItemById(values.id) : undefined;
 
   const item: LearningItem = {

@@ -9,6 +9,7 @@ import {
 import type { JlptLevel, Skill } from '@/types/domain';
 import type { Topic } from '@/types/topic';
 import { nowIso } from '@/utils/date';
+import { createId } from '@/utils/id';
 
 export type CreateTopicInput = {
   level: JlptLevel;
@@ -69,7 +70,7 @@ export function useTopics() {
 
       const timestamp = nowIso();
       await upsertTopic({
-        id: crypto.randomUUID(),
+        id: createId(),
         userId: user.id,
         level: input.level,
         skill: input.skill,
