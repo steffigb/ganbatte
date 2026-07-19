@@ -1,9 +1,43 @@
 # JLPT Lern-App — Implementation Plan
 
-> **Status:** Final specification for implementation  
-> **Last updated:** 2026-07-13 (migration ownership rule)  
+> **Status:** Implementation in progress  
+> **Last updated:** 2026-07-13 (scaffold + Supabase schema complete)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
+
+---
+
+## Implementation Progress (snapshot)
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Planning & specification | ✅ Done | `PLAN.md` |
+| Supabase project + migrations | ✅ Done | EU project; `initial_schema` + `complete_schema` applied |
+| React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
+| Auth | ✅ Done | Login, session persistence, protected routes |
+| Dexie + local data | ⬜ Next | §10 schema |
+| Sync, SRS, features | ⬜ Pending | MVP steps 5–15 |
+
+### Completed checklist
+- [x] Git repository + `.gitignore` (incl. `.env`)
+- [x] Supabase project created (EU region)
+- [x] `supabase init`, linked project, migrations in `supabase/migrations/`
+- [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`)
+- [x] All tables §9.2, RLS, indexes, storage bucket + policies
+- [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
+- [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
+- [x] ESLint + Prettier + path aliases (`@/`)
+- [x] `vite-plugin-pwa` + app shell layout
+- [x] Placeholder pages for all routes (§7)
+- [x] Feature folder stubs (`dashboard`, `review`, `search`, `import`, `settings`, `learn`)
+- [x] Supabase client (`src/lib/supabase/client.ts`)
+- [x] Auth — `AuthProvider`, login form, `RequireAuth`, session persistence
+- [x] Dexie dependency installed; schema not yet implemented
+- [x] `README.md` with setup instructions
+
+### Next up
+- [ ] Dexie schema mirroring Postgres + `pendingChanges`
+- [ ] CRUD for topics, items, sources
 
 ---
 
@@ -31,6 +65,8 @@
 20. [Legal & Content Policy](#20-legal--content-policy)
 21. [Open Questions / Future Considerations](#21-open-questions--future-considerations)
 22. [React + Vite Architecture & Best Practices](#22-react--vite-architecture--best-practices)
+
+*(See also: [Implementation Progress](#implementation-progress-snapshot) at top.)*
 
 ---
 
@@ -72,8 +108,8 @@
 - [ ] Dashboard clearly shows **N4 weak topics** per skill
 - [ ] N5 recap targets **actual gaps only**, not full N5 re-learn
 - [ ] Full offline learning works; sync runs automatically when online
-- [ ] No Google dependency
-- [ ] Only the owner has data access (Supabase RLS)
+- [x] No Google dependency
+- [x] Only the owner has data access (Supabase RLS) — *DB policies in migrations; app auth pending*
 - [ ] Sources are optional metadata; JLPT structure remains primary
 
 ---
@@ -219,24 +255,24 @@
 - [ ] Study session log (duration, skill, reviews, optional note)
 
 #### Sync, Backend & Backup
-- [ ] Supabase Postgres — central data store
-- [ ] Supabase Storage — bucket for listening audio
-- [ ] Supabase Auth — single private account (email + password)
-- [ ] Row Level Security — own data only
+- [x] Supabase Postgres — central data store (*schema migrated*)
+- [x] Supabase Storage — bucket for listening audio (*`listening-audio` in migrations*)
+- [x] Supabase Auth — single private account (email + password)
+- [x] Row Level Security — own data only (*policies in migrations*)
 - [ ] Dexie.js / IndexedDB — local cache + offline operation
 - [ ] Delta sync — push/pull changed records since `lastSyncAt`
 - [ ] Sync on app start and after study sessions
-- [ ] Sync status UI — last synced, pending changes, offline indicator
+- [ ] Sync status UI — last synced, pending changes, offline indicator (*placeholder badge only*)
 - [ ] JSON export/import — local backup (additional)
 - [ ] Audio: upload to Storage, playback via signed URL; optional local cache (v2)
 
 #### UI
-- [ ] Dashboard
-- [ ] Study today / review session
-- [ ] Browse by skill / level / topic (+ source filter)
-- [ ] Global search
-- [ ] Add — single + bulk import (+ CSV templates)
-- [ ] Settings (exam date, sync, login)
+- [x] Dashboard — *placeholder page / route*
+- [x] Study today / review session — *placeholder page / route*
+- [x] Browse by skill / level / topic (+ source filter) — *placeholder `/learn/:skill`*
+- [x] Global search — *placeholder page / route*
+- [x] Add — single + bulk import (+ CSV templates) — *placeholder pages; CSV templates pending*
+- [x] Settings (exam date, sync, login) — *placeholder page; settings logic pending*
 - [ ] Theme: light / dark / system
 
 ### Version 2 — Extensions
@@ -618,15 +654,15 @@ supabase/
 
 #### Initial migration checklist
 
-The first migration (`initial_schema`) should include:
+The schema is split across two migrations (`initial_schema` + `complete_schema`):
 
-- [ ] All tables from §9.2
-- [ ] `user_id` FK to `auth.users` on every table
-- [ ] `created_at`, `updated_at`, optional `deleted_at`
-- [ ] RLS enabled + policies on every table
-- [ ] Indexes from §9.3
-- [ ] Storage bucket `listening-audio` (private) + RLS policies
-- [ ] `updated_at` trigger function (recommended)
+- [x] All tables from §9.2
+- [x] `user_id` FK to `auth.users` on every table
+- [x] `created_at`, `updated_at`, optional `deleted_at`
+- [x] RLS enabled + policies on every table
+- [x] Indexes from §9.3
+- [x] Storage bucket `listening-audio` (private) + RLS policies
+- [x] `updated_at` trigger function (recommended)
 
 #### Environment variables (app)
 
@@ -935,21 +971,21 @@ Use OGG or lower bitrate to save space if needed.
 
 ## 17. Implementation Order (MVP)
 
-1. Project scaffold (PWA + TypeScript + Tailwind)
-2. **Supabase CLI** — `supabase init`, link project, `initial_schema` migration, `supabase db push`
-3. Auth — login screen, session persistence
-4. Dexie schema (mirrors Postgres + pendingChanges)
-5. CRUD — topics, items, sources, itemSources
-6. Delta sync — pull/push + offline queue
-7. SRS engine + review session UI
-8. TopicProgress computation
-9. Dashboard + "Study today"
-10. Global search
-11. Bulk import CSV
-12. Audio upload + playback (Storage)
-13. JSON export/import (backup)
-14. Settings + sync status UI
-15. Polish — CSV templates, dark mode, error handling
+1. [x] Project scaffold (PWA + TypeScript + Tailwind)
+2. [x] **Supabase CLI** — `supabase init`, link project, migrations, `supabase db push`
+3. [x] Auth — login screen, session persistence
+4. [ ] Dexie schema (mirrors Postgres + pendingChanges)
+5. [ ] CRUD — topics, items, sources, itemSources
+6. [ ] Delta sync — pull/push + offline queue
+7. [ ] SRS engine + review session UI
+8. [ ] TopicProgress computation
+9. [ ] Dashboard + "Study today" *(replace placeholders with real logic)*
+10. [ ] Global search
+11. [ ] Bulk import CSV
+12. [ ] Audio upload + playback (Storage)
+13. [ ] JSON export/import (backup)
+14. [ ] Settings + sync status UI
+15. [ ] Polish — CSV templates, dark mode, error handling
 
 ---
 
@@ -992,7 +1028,7 @@ Supabase is primary; JSON export is additional safety net.
 
 - [x] Final framework choice: **React + Vite** (see ADR-011, §22)
 - [ ] SRS algorithm: SM-2 vs FSRS (recommend evaluating FSRS)
-- [ ] Junction table `item_topics` vs `topicIds[]` array on item
+- [x] Junction table `item_topics` vs `topicIds[]` array on item — **`item_topics` table in migrations**
 - [ ] Signed URL expiry duration for audio
 - [ ] Default exam date exact day (early December 2026 — set when JLPT date confirmed)
 - [ ] Supabase Realtime in v2 — needed or is delta sync sufficient?
@@ -1277,16 +1313,16 @@ export function StudyTodayPage() {
 
 When creating the project:
 
-- [ ] Vite + React + TypeScript template
-- [ ] Tailwind CSS
-- [ ] ESLint + Prettier
-- [ ] Path aliases (`@/`)
-- [ ] Folder structure per §22.2
-- [ ] `vite-plugin-pwa`
-- [ ] Strict TypeScript
-- [ ] Placeholder feature folders: `dashboard`, `review`, `search`, `import`, `settings`, `learn`
-- [ ] `supabase init` + `supabase/migrations/` (see §9.6)
-- [ ] `.env.example` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- [x] Vite + React + TypeScript template
+- [x] Tailwind CSS
+- [x] ESLint + Prettier
+- [x] Path aliases (`@/`)
+- [x] Folder structure per §22.2
+- [x] `vite-plugin-pwa`
+- [x] Strict TypeScript
+- [x] Placeholder feature folders: `dashboard`, `review`, `search`, `import`, `settings`, `learn`
+- [x] `supabase init` + `supabase/migrations/` (see §9.6)
+- [x] `.env.example` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
 
 ---
 
@@ -1309,6 +1345,8 @@ When creating the project:
 | 2026-07-13 | **Supabase CLI migrations** for all schema changes (ADR-012, §9.6) |
 | 2026-07-13 | Publishable API key (`VITE_SUPABASE_PUBLISHABLE_KEY`) instead of legacy anon key |
 | 2026-07-13 | **Agent must not run DB migrations** — owner applies `db push` manually (ADR-013) |
+| 2026-07-13 | React + Vite PWA scaffold complete (§22.18); placeholder routes for all screens |
+| 2026-07-13 | Auth implemented — login form, session persistence, `RequireAuth`, sign out |
 
 ---
 

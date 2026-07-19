@@ -1,6 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { routes } from '@/app/routes.config';
 import { SyncStatus } from '@/components/layout/SyncStatus';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 const navItems = [
   { to: routes.dashboard, label: 'Dashboard' },
@@ -12,6 +14,8 @@ const navItems = [
 ];
 
 export function AppLayout() {
+  const { user, signOut } = useAuth();
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
@@ -20,12 +24,19 @@ export function AppLayout() {
             <span className="text-lg font-semibold tracking-tight">Ganbatte</span>
             <SyncStatus />
           </div>
-          <NavLink
-            to={routes.search}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
-          >
-            Search…
-          </NavLink>
+          <div className="flex items-center gap-2">
+            <NavLink
+              to={routes.search}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
+            >
+              Search…
+            </NavLink>
+            {user ? (
+              <Button type="button" onClick={() => signOut()} className="px-3 py-2">
+                Sign out
+              </Button>
+            ) : null}
+          </div>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-3">
           {navItems.map((item) => (
