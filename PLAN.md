@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-20 (MVP step 9 — dashboard + smart study queue)  
+> **Last updated:** 2026-07-20 (MVP step 10 — global search)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -18,7 +18,8 @@
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
 | CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
-| SRS + features | ⬜ In progress | Step 9 done; steps 10–15 remain |
+| SRS + features | ✅ Done | Steps 1–9 complete |
+| Search & polish | 🔄 In progress | Step 10 done; steps 11–15 remain |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -59,9 +60,10 @@
 - [x] **Dashboard** — days until exam, overall + per-skill readiness, weak topics (`features/dashboard/`)
 - [x] **Smart study queue** — due + weakness boost (top 3 topics) + N5 recap (`buildReviewQueue.ts`)
 - [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`)
+- [x] **Global search** — `lib/search/`, `features/search/`; debounced `/search`, filters, grouped results, Japanese normalization
 
 ### Next up
-- [ ] Global search (MVP step 10)
+- [ ] Bulk import CSV (MVP step 11)
 
 ### Dev hint — test on phone before deploy
 
@@ -133,13 +135,13 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - Search existing items before adding duplicates
 
 ### Success criteria (acceptance)
-- [ ] Study on phone → open laptop → **identical progress** after sync
+- [ ] Study on phone → open laptop → **identical progress** after sync — *delta sync ✅; junction upsert fix applied*
 - [ ] Upload listening audio → playable on both devices
-- [ ] Global search (kanji / vocab / grammar / topics) returns results in < 1 second locally
+- [x] Global search (kanji / vocab / grammar / topics) returns results in < 1 second locally — *local IndexedDB search on `/search` (step 10)*
 - [ ] Bulk import of 50 items in < 2 minutes
-- [ ] Dashboard clearly shows **N4 weak topics** per skill
-- [ ] N5 recap targets **actual gaps only**, not full N5 re-learn
-- [ ] Full offline learning works; sync runs automatically when online
+- [x] Dashboard clearly shows **N4 weak topics** per skill — *readiness by skill + weak-topic list (step 9)*
+- [ ] N5 recap targets **actual gaps only**, not full N5 re-learn — *N5 slots in study queue (step 9); gap detection basic*
+- [x] Full offline learning works; sync runs automatically when online
 - [x] No Google dependency
 - [x] Only the owner has data access (Supabase RLS + app auth via `RequireAuth`)
 - [ ] Sources are optional metadata; JLPT structure remains primary
@@ -282,18 +284,18 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - [ ] Import preview with validation and error list
 
 #### Search
-- [ ] Global search across vocabulary, kanji, grammar, topics, tags, sources
-- [ ] Filters: type, level, skill, mastery status
-- [ ] Grouped results (Topics / Grammar / Vocabulary / Kanji)
-- [ ] Duplicate hint on manual create — *duplicate blocked on save; inline hint pending*
+- [x] Global search across vocabulary, kanji, grammar, topics, tags, sources — *`/search` (step 10)*
+- [x] Filters: type, level, skill, mastery status — *+ weak only*
+- [x] Grouped results (Topics / Grammar / Vocabulary / Kanji) — *+ Reading / Listening*
+- [ ] Duplicate hint on manual create — *duplicate blocked on save; `findSimilarItems()` ready; inline hint on `/add` pending*
 - [ ] Duplicate display in bulk import ("already exists")
-- [ ] Offline-capable (local IndexedDB)
+- [x] Offline-capable (local IndexedDB)
 
 #### Progress & Planning
-- [ ] Dashboard — days until exam, readiness per skill, top weak topics — *done (step 9); weekly plan pending*
-- [ ] Topic status — new / learning / familiar / mastered — *per-item via SRS; per-topic via TopicProgress ✅*
-- [ ] "Study today" — SRS queue + recommended weak topics — *done (step 9)*
-- [ ] Exam date in settings (default: early December 2026)
+- [x] Dashboard — days until exam, readiness per skill, top weak topics *(step 9; weekly plan pending)*
+- [x] Topic status — per-item via SRS; per-topic via TopicProgress *(step 8)*
+- [x] "Study today" — SRS due + weakness boost + N5 recap *(step 9, §14.1)*
+- [ ] Exam date in settings UI — *default via `ensureAppSettings()` on first load; `/settings` edit pending (step 14)*
 - [ ] Simple weekly plan from weaknesses + remaining time
 - [ ] Study session log (duration, skill, reviews, optional note)
 
@@ -313,10 +315,11 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - [x] Dashboard — *real widgets (step 9)*
 - [x] Study today / review session — `/study` SM-2 + weakness + N5 recap ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 - [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete *(topic/source filters pending)*
-- [x] Global search — *placeholder page / route*
+- [x] Global search — `/search` with debounced query, filters, grouped results *(step 10)*
 - [x] Add — single item form on `/add` *(bulk import + CSV templates pending)*
 - [x] Topics & sources management — `/topics`
-- [x] Settings (exam date, sync, login) — *placeholder page; settings logic pending*
+- [x] Settings page route — `/settings` *(placeholder; exam date edit + theme in step 14)*
+- [x] Sync status in app header — last synced, pending, offline *(step 6)*
 - [ ] Theme: light / dark / system
 
 ### Version 2 — Extensions
@@ -782,7 +785,8 @@ db.version(1).stores({
 
 | Entity | Rule |
 |--------|------|
-| Topic, Source, LearningItem, ItemSource, UserProgress, AppSettings | Same `id` → newer `updatedAt` wins; respect `deletedAt` |
+| Topic, Source, LearningItem, UserProgress, AppSettings | Same `id` → newer `updatedAt` wins; respect `deletedAt` |
+| ItemSource, ItemTopic | Upsert on natural key `(item_id, source_id)` / `(item_id, topic_id)` — dedupe local rows on pull; see `UPSERT_ON_CONFLICT` in `lib/sync/tables.ts` |
 | Review | Append-only; dedupe by `id` |
 | StudySession, ImportBatch | Union; dedupe by `id` |
 
@@ -912,15 +916,38 @@ Kanji (0)
 - Optional Fuse.js for fuzzy search
 - Fully offline
 
+### 13.5 Implementation (step 10)
+
+**Implemented:**
+- `lib/search/searchLocal.ts` — in-memory filter + group from Dexie data via `loadStudyContext()`
+- `utils/japaneseText.ts` — NFKC + katakana→hiragana normalization for partial match
+- `features/search/` — `SearchBar`, `SearchFiltersPanel`, `SearchResultsView`, `useSearch` (200ms debounce)
+- `/search` — grouped results; items link to Edit / Study; topics link to `/topics`
+- `findSimilarItems()` in `searchService.ts` — ready for `/add` duplicate hint
+
+**Pending:**
+- Inline “similar entry exists” warning on `/add` create form
+- Fuse.js fuzzy search (optional)
+- Filter UI polish (discoverability, layout)
+
 ---
 
 ## 14. Learning Logic
 
 ### 14.1 Daily session ("Study today")
 
-1. **SRS due** — all overdues + daily limit (~30 cards)
-2. **Weakness boost** — 5–10 items from top 3 topics with `needsAttention`
-3. **N5 recap** — proportional to `n5RecapRatio` (default 20%)
+1. **SRS due** — all overdues + never-reviewed SRS items (first in queue)
+2. **Weakness boost** — up to 8 items from top 3 topics with `needsAttention`
+3. **N5 recap** — up to `round(30 × n5RecapRatio)` N5 cards (default 6 at 20%)
+
+**Daily cap:** 30 cards total (`DAILY_REVIEW_LIMIT` in `lib/srs/constants.ts`). Dedupe by `item.id`; order: due → weakness → N5.
+
+**Constants:** `WEAKNESS_BOOST_TARGET = 8`, `WEAKNESS_TOPIC_LIMIT = 3` (`features/review/buildReviewQueue.ts`).
+
+**Implementation (step 9):**
+- `lib/study/loadStudyContext.ts` — shared data for dashboard + queue
+- `features/review/buildReviewQueue.ts` — `buildReviewQueueFromContext()`
+- `lib/settings/ensureAppSettings.ts` — defaults: exam `2026-12-06`, `n5RecapRatio` 0.2
 
 ### 14.2 Weekly plan (v1, simple)
 
@@ -930,9 +957,11 @@ Kanji (0)
 
 ### 14.3 Readiness score (dashboard)
 
-Optional weighted average:
-- Vocabulary 25%, Kanji 20%, Grammar 25%, Reading 15%, Listening 15%
-- Penalty if any skill < 60%
+**Implemented (step 9)** in `lib/dashboard/readiness.ts`:
+- Weighted average: Vocabulary 25%, Kanji 20%, Grammar 25%, Reading 15%, Listening 15%
+- Per-skill % = mastered items / total items for that skill
+- Penalty: overall × 0.85 if any skill < 60%
+- Shown on `/` via `features/dashboard/`
 
 ### 14.4 Session logging
 
@@ -1036,7 +1065,7 @@ Use OGG or lower bitrate to save space if needed.
 | Forms | React Hook Form + Zod (optional) |
 | SRS | **SM-2** (step 7); **FSRS** via `ts-fsrs` when user opts in ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs)) |
 | PWA | vite-plugin-pwa |
-| Search | Local Dexie filter + optional Fuse.js |
+| Search | Local Dexie filter (`lib/search/`); Fuse.js optional, not used yet |
 | Audio playback | HTML5 `<audio>` + Supabase signed URLs |
 
 > **Architecture conventions:** See [§22 React + Vite Architecture & Best Practices](#22-react--vite-architecture--best-practices).
@@ -1060,11 +1089,11 @@ Use OGG or lower bitrate to save space if needed.
 7. [x] SRS engine (**SM-2**) + review session UI — FSRS opt-in later ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 8. [x] TopicProgress computation — `lib/topicProgress/`, `/topics` mastery display
 9. [x] Dashboard + "Study today" — readiness widgets, mixed review queue (§14.1)
-10. [ ] Global search
+10. [x] Global search — `lib/search/`, debounced `/search`, filters, grouped results (§13)
 11. [ ] Bulk import CSV
 12. [ ] Audio upload + playback (Storage)
 13. [ ] JSON export/import (backup)
-14. [ ] Settings + sync status UI
+14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(sync status already in header)*
 15. [ ] Polish — CSV templates, dark mode, error handling
 
 ---
@@ -1248,8 +1277,11 @@ All IO and domain logic without React:
 | `lib/dashboard/` | Skill/overall readiness scores (step 9) |
 | `lib/study/` | Shared `loadStudyContext()` for dashboard + review queue |
 | `lib/settings/` | `ensureAppSettings()` defaults (exam date, n5RecapRatio) |
+| `features/dashboard/` | Dashboard widgets, `useDashboard`, `loadDashboardData()` |
+| `features/search/` | Search UI, `useSearch`, `searchService` *(step 10)* |
+| `features/review/buildReviewQueue.ts` | Mixed study queue: due + weakness + N5 recap |
 | `lib/import/` | CSV parse, validate, duplicate check |
-| `lib/search/` | IndexedDB search queries |
+| `lib/search/` | IndexedDB search queries *(step 10)* |
 
 **Repository pattern for Dexie:**
 
@@ -1348,6 +1380,7 @@ Components and hooks never touch Dexie tables directly — go through repositori
 
 - Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — never commit secrets
 - Code-split by route (`React.lazy`)
+- `vite.config.ts` — `manualChunks` for `react`, `@supabase/supabase-js`, `dexie` (keeps main bundle under 500 kB)
 - PWA config in `vite.config.ts` — cache static assets; **do not** cache Supabase API blindly
 - Dexie and sync logic stay out of service worker — SW for assets only in v1
 - **LAN dev (phone/tablet):** `npm run dev -- --host` — use the printed Network URL; plain HTTP is fine for CRUD/sync testing (see [§22.19](#2219-id-generation-uuids) for UUID caveat)
@@ -1467,6 +1500,8 @@ const id = createId();
 | 2026-07-19 | Review session — SM-2 engine, `/study` UI, Review + UserProgress persistence (MVP step 7) |
 | 2026-07-19 | TopicProgress — per-topic mastery %, needsAttention rules, display on `/topics` (MVP step 8) |
 | 2026-07-20 | Dashboard + smart study queue — readiness widgets, weakness boost, N5 recap (MVP step 9) |
+| 2026-07-20 | Sync fix — junction tables upsert on natural key (`item_topics`, `item_sources`, `user_progress`) |
+| 2026-07-20 | Global search — `lib/search/`, debounced `/search`, filters, grouped results, Japanese normalization (MVP step 10) |
 
 ---
 

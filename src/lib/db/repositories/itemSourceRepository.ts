@@ -15,6 +15,10 @@ export async function listItemSourcesByItem(
   return db.itemSources.where('itemId').equals(itemId).toArray();
 }
 
+export async function listItemSourcesByUser(userId: string): Promise<ItemSource[]> {
+  return db.itemSources.where('userId').equals(userId).toArray();
+}
+
 export async function listItemSourcesBySource(
   sourceId: string,
 ): Promise<ItemSource[]> {
