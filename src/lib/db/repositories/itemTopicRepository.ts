@@ -13,6 +13,10 @@ export async function listItemTopicsByTopic(
   return db.itemTopics.where('topicId').equals(topicId).toArray();
 }
 
+export async function listItemTopicsByUser(userId: string): Promise<ItemTopic[]> {
+  return db.itemTopics.where('userId').equals(userId).toArray();
+}
+
 export async function findItemTopicLink(
   itemId: string,
   topicId: string,

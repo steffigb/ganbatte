@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-19 (MVP step 7 — SM-2 review session on `/study`)  
+> **Last updated:** 2026-07-19 (MVP step 8 — TopicProgress computation)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -18,7 +18,7 @@
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
 | CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
-| SRS + features | ⬜ In progress | Step 7 done; steps 8–15 remain |
+| SRS + features | ⬜ In progress | Steps 8 done; steps 9–15 remain |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -54,9 +54,11 @@
 - [x] **SM-2 engine** — `lib/srs/sm2.ts` (interval, ease, mastery)
 - [x] **Review session** — `/study` queue, flip card, grade buttons, session summary
 - [x] **Review persistence** — append-only `Review` + `UserProgress` updates (synced)
+- [x] **TopicProgress** — `lib/topicProgress/` aggregates mastery %, `needsAttention` per topic
+- [x] **Topic progress UI** — mastery stats + “Needs attention” on `/topics`
 
 ### Next up
-- [ ] TopicProgress computation (MVP step 8)
+- [ ] Dashboard + “Study today” weak-topic boost (MVP step 9)
 
 ### Dev hint — test on phone before deploy
 
@@ -286,7 +288,7 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 
 #### Progress & Planning
 - [ ] Dashboard — days until exam, readiness per skill, top weak topics
-- [ ] Topic status — new / learning / familiar / mastered
+- [ ] Topic status — new / learning / familiar / mastered — *per-item via SRS; per-topic via TopicProgress ✅*
 - [ ] "Study today" — SRS queue + recommended weak topics
 - [ ] Exam date in settings (default: early December 2026)
 - [ ] Simple weekly plan from weaknesses + remaining time
@@ -1053,7 +1055,7 @@ Use OGG or lower bitrate to save space if needed.
 5. [x] CRUD — topics, items, sources, itemSources
 6. [x] Delta sync — pull/push + offline queue
 7. [x] SRS engine (**SM-2**) + review session UI — FSRS opt-in later ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
-8. [ ] TopicProgress computation
+8. [x] TopicProgress computation — `lib/topicProgress/`, `/topics` mastery display
 9. [ ] Dashboard + "Study today" *(replace placeholders with real logic)*
 10. [ ] Global search
 11. [ ] Bulk import CSV
@@ -1239,6 +1241,7 @@ All IO and domain logic without React:
 | `lib/supabase/` | Client init, auth helpers |
 | `lib/sync/` | Pull, push, merge, pending queue |
 | `lib/srs/` | SM-2 scheduling (step 7); FSRS + readiness helper (phase 2) |
+| `lib/topicProgress/` | TopicProgress aggregation (step 8); `topNeedsAttentionTopics()` for study queue |
 | `lib/import/` | CSV parse, validate, duplicate check |
 | `lib/search/` | IndexedDB search queries |
 
@@ -1456,6 +1459,7 @@ const id = createId();
 | 2026-07-19 | Mobile LAN dev — `createId()` helper replaces direct `crypto.randomUUID()` (§22.19); sync verified phone ↔ laptop |
 | 2026-07-19 | SRS: SM-2 for MVP step 7; FSRS opt-in after review-history thresholds (ADR-014, §14.5) |
 | 2026-07-19 | Review session — SM-2 engine, `/study` UI, Review + UserProgress persistence (MVP step 7) |
+| 2026-07-19 | TopicProgress — per-topic mastery %, needsAttention rules, display on `/topics` (MVP step 8) |
 
 ---
 

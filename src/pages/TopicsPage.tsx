@@ -1,10 +1,20 @@
+import { useCallback } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { SourceForm, SourceList, useSources } from '@/features/sources';
-import { TopicForm, TopicList, useTopics } from '@/features/topics';
+import { TopicForm, TopicList, useTopicProgress, useTopics } from '@/features/topics';
 
 export function TopicsPage() {
   const topicsState = useTopics();
+  const progressState = useTopicProgress();
   const sourcesState = useSources();
+
+  const handleTopicDeleted = useCallback(
+    async (id: string) => {
+      await topicsState.removeTopic(id);
+      progressState.reload();
+    },
+    [topicsState, progressState],
+  );
 
   return (
     <PageLayout
@@ -14,12 +24,18 @@ export function TopicsPage() {
       <div className="grid gap-8 lg:grid-cols-2">
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Topics</h2>
-          <TopicForm onSubmit={topicsState.createTopic} />
+          <TopicForm
+            onSubmit={async (input) => {
+              await topicsState.createTopic(input);
+              progressState.reload();
+            }}
+          />
           <TopicList
             topics={topicsState.topics}
-            isLoading={topicsState.isLoading}
-            error={topicsState.error}
-            onDelete={topicsState.removeTopic}
+            progressByTopicId={progressState.progressByTopicId}
+            isLoading={topicsState.isLoading || progressState.isLoading}
+            error={topicsState.error ?? progressState.error}
+            onDelete={handleTopicDeleted}
           />
         </section>
 

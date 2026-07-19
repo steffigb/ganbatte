@@ -1,15 +1,31 @@
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { Topic } from '@/types/topic';
+import type { TopicProgress } from '@/types/topicProgress';
 
 type TopicListProps = {
   topics: Topic[];
+  progressByTopicId?: Map<string, TopicProgress>;
   isLoading: boolean;
   error: string | null;
   onDelete: (id: string) => Promise<void>;
 };
 
-export function TopicList({ topics, isLoading, error, onDelete }: TopicListProps) {
+function formatTopicProgress(progress: TopicProgress | undefined): string | null {
+  if (!progress || progress.itemCount === 0) {
+    return null;
+  }
+
+  return `${progress.masteredCount}/${progress.itemCount} mastered · ${progress.masteryPercent}%`;
+}
+
+export function TopicList({
+  topics,
+  progressByTopicId,
+  isLoading,
+  error,
+  onDelete,
+}: TopicListProps) {
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -32,15 +48,27 @@ export function TopicList({ topics, isLoading, error, onDelete }: TopicListProps
 
   return (
     <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
-      {topics.map((topic) => (
+      {topics.map((topic) => {
+        const progress = progressByTopicId?.get(topic.id);
+        const progressLabel = formatTopicProgress(progress);
+
+        return (
         <li
           key={topic.id}
           className="flex items-start justify-between gap-4 px-4 py-3 text-sm"
         >
           <div className="min-w-0 space-y-0.5">
-            <p className="font-medium text-slate-900 dark:text-slate-100">{topic.name}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium text-slate-900 dark:text-slate-100">{topic.name}</p>
+              {progress?.needsAttention ? (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                  Needs attention
+                </span>
+              ) : null}
+            </div>
             <p className="text-slate-500 dark:text-slate-400">
               {topic.level} · {topic.skill}
+              {progressLabel ? <span> · {progressLabel}</span> : null}
             </p>
             {topic.description ? (
               <p className="text-slate-600 dark:text-slate-400">{topic.description}</p>
@@ -54,7 +82,8 @@ export function TopicList({ topics, isLoading, error, onDelete }: TopicListProps
             Delete
           </Button>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

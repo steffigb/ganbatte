@@ -29,3 +29,11 @@ export const REMOTE_TABLE_NAMES: Record<SyncTableName, string> = {
 export const SOFT_DELETE_TABLES = new Set<SyncTableName>(['topics', 'learningItems']);
 
 export const APPEND_ONLY_TABLES = new Set<SyncTableName>(['reviews']);
+
+/** Natural-key upsert targets — Postgres UNIQUE constraints, not PK `id` alone. */
+export const UPSERT_ON_CONFLICT: Partial<Record<SyncTableName, string>> = {
+  itemSources: 'item_id,source_id',
+  itemTopics: 'item_id,topic_id',
+  userProgress: 'user_id,item_id',
+  appSettings: 'user_id',
+};

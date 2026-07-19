@@ -14,6 +14,10 @@ export async function listReviewsByItem(itemId: string): Promise<Review[]> {
     .sortBy('reviewedAt');
 }
 
+export async function listReviewsByUser(userId: string): Promise<Review[]> {
+  return db.reviews.where('userId').equals(userId).sortBy('reviewedAt');
+}
+
 export async function upsertReview(review: Review): Promise<string> {
   const existing = await db.reviews.get(review.id);
   const record = withTimestamps(review, existing);
