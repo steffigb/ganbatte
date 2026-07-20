@@ -1,4 +1,6 @@
-import type { ItemType, JlptLevel } from '@/types/domain';
+import type { ItemType, JlptLevel, ReadingStatus } from '@/types/domain';
+import type { KanjiReadingFieldInput } from '@/utils/kanjiReading';
+import { kanjiReadingFieldFromItem } from '@/utils/kanjiReading';
 
 export type ItemFormValues = {
   id?: string;
@@ -11,12 +13,46 @@ export type ItemFormValues = {
   topicIds: string[];
   sourceIds: string[];
   sourceReferences: Record<string, string>;
+  /** Kanji-only reading fields (tri-state). */
+  standaloneKun?: KanjiReadingFieldInput;
+  onyomi?: KanjiReadingFieldInput;
+  kunyomi?: KanjiReadingFieldInput;
 };
 
 export const DEFAULT_ITEM_FORM_TYPE_LEVEL: Pick<ItemFormValues, 'type' | 'level'> = {
   type: 'word',
   level: 'N4',
 };
+
+function defaultKanjiReadingField(): KanjiReadingFieldInput {
+  return { value: '', status: 'unset', noneChecked: false };
+}
+
+export function createBlankKanjiReadingFields(): Pick<
+  ItemFormValues,
+  'standaloneKun' | 'onyomi' | 'kunyomi'
+> {
+  return {
+    standaloneKun: defaultKanjiReadingField(),
+    onyomi: defaultKanjiReadingField(),
+    kunyomi: defaultKanjiReadingField(),
+  };
+}
+
+export function kanjiReadingFieldsFromItem(item: {
+  reading?: string;
+  readingStatus?: ReadingStatus;
+  onyomi?: string;
+  onyomiStatus?: ReadingStatus;
+  kunyomi?: string;
+  kunyomiStatus?: ReadingStatus;
+}): Pick<ItemFormValues, 'standaloneKun' | 'onyomi' | 'kunyomi'> {
+  return {
+    standaloneKun: kanjiReadingFieldFromItem(item.reading, item.readingStatus),
+    onyomi: kanjiReadingFieldFromItem(item.onyomi, item.onyomiStatus),
+    kunyomi: kanjiReadingFieldFromItem(item.kunyomi, item.kunyomiStatus),
+  };
+}
 
 export function createBlankItemFormValues(
   defaults: Pick<ItemFormValues, 'type' | 'level'> = DEFAULT_ITEM_FORM_TYPE_LEVEL,
@@ -31,5 +67,6 @@ export function createBlankItemFormValues(
     topicIds: [],
     sourceIds: [],
     sourceReferences: {},
+    ...(defaults.type === 'kanji' ? createBlankKanjiReadingFields() : {}),
   };
 }

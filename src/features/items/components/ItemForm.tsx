@@ -8,10 +8,13 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import type { ItemFormValues } from '@/features/items/itemFormTypes';
+import { createBlankKanjiReadingFields } from '@/features/items/itemFormTypes';
 import type { SaveFeedback } from '@/features/items/hooks/useItemForm';
+import { KanjiReadingField } from '@/features/items/components/KanjiReadingField';
 import { useSources } from '@/features/sources';
 import { useTopics } from '@/features/topics';
 import type { ItemType, JlptLevel } from '@/types/domain';
+import type { KanjiReadingFieldInput } from '@/utils/kanjiReading';
 
 const typeOptions = [
   { value: 'word', label: 'Word (vocabulary)' },
@@ -54,6 +57,25 @@ function ItemFormFields({
   const [sourceReferences, setSourceReferences] = useState<Record<string, string>>(
     initialValues.sourceReferences,
   );
+  const [standaloneKun, setStandaloneKun] = useState<KanjiReadingFieldInput>(
+    initialValues.standaloneKun ?? createBlankKanjiReadingFields().standaloneKun!,
+  );
+  const [onyomiField, setOnyomiField] = useState<KanjiReadingFieldInput>(
+    initialValues.onyomi ?? createBlankKanjiReadingFields().onyomi!,
+  );
+  const [kunyomiField, setKunyomiField] = useState<KanjiReadingFieldInput>(
+    initialValues.kunyomi ?? createBlankKanjiReadingFields().kunyomi!,
+  );
+
+  function handleTypeChange(nextType: ItemType) {
+    if (nextType === 'kanji' && type !== 'kanji') {
+      const blanks = createBlankKanjiReadingFields();
+      setStandaloneKun(blanks.standaloneKun!);
+      setOnyomiField(blanks.onyomi!);
+      setKunyomiField(blanks.kunyomi!);
+    }
+    setType(nextType);
+  }
 
   function toggleTopic(topicId: string) {
     setTopicIds((current) =>
@@ -93,12 +115,19 @@ function ItemFormFields({
       type,
       level,
       japanese,
-      reading: reading || undefined,
+      reading: type === 'kanji' ? undefined : reading || undefined,
       meaning,
       notes: notes || undefined,
       topicIds,
       sourceIds,
       sourceReferences,
+      ...(type === 'kanji'
+        ? {
+            standaloneKun,
+            onyomi: onyomiField,
+            kunyomi: kunyomiField,
+          }
+        : {}),
     });
   }
 
@@ -113,7 +142,7 @@ function ItemFormFields({
           label="Type"
           value={type}
           options={typeOptions}
-          onChange={(event) => setType(event.target.value as ItemType)}
+          onChange={(event) => handleTypeChange(event.target.value as ItemType)}
         />
         <Select
           id="item-level"
@@ -125,20 +154,50 @@ function ItemFormFields({
       </div>
       <Input
         id="item-japanese"
-        label="Japanese"
+        label={type === 'kanji' ? 'Kanji' : 'Japanese'}
         required
         value={japanese}
         onChange={(event) => setJapanese(event.target.value)}
       />
-      <Input
-        id="item-reading"
-        label="Reading (optional)"
-        value={reading}
-        onChange={(event) => setReading(event.target.value)}
-      />
+      {type === 'kanji' ? (
+        <div className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Readings</p>
+          <KanjiReadingField
+            id="kanji-standalone-kun"
+            label="Kun (standalone — when the kanji is a word on its own)"
+            noneLabel="No standalone kun reading"
+            placeholder="e.g. みぎ"
+            field={standaloneKun}
+            onChange={setStandaloneKun}
+          />
+          <KanjiReadingField
+            id="kanji-onyomi"
+            label="On'yomi"
+            noneLabel="No on'yomi"
+            placeholder="e.g. ウ、ユウ"
+            field={onyomiField}
+            onChange={setOnyomiField}
+          />
+          <KanjiReadingField
+            id="kanji-kunyomi"
+            label="Kun'yomi"
+            noneLabel="No kun'yomi"
+            placeholder="e.g. みぎ"
+            field={kunyomiField}
+            onChange={setKunyomiField}
+          />
+        </div>
+      ) : (
+        <Input
+          id="item-reading"
+          label="Reading (optional)"
+          value={reading}
+          onChange={(event) => setReading(event.target.value)}
+        />
+      )}
       <Input
         id="item-meaning"
-        label="Meaning"
+        label="Meaning (English)"
         required
         value={meaning}
         onChange={(event) => setMeaning(event.target.value)}

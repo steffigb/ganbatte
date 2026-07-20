@@ -9,6 +9,9 @@ export type Skill =
 
 export type ItemType = 'word' | 'kanji' | 'grammar' | 'reading' | 'listening';
 
+/** Kanji reading field: unset = not entered, none = confirmed absent, set = has value. */
+export type ReadingStatus = 'unset' | 'none' | 'set';
+
 export type MasteryLevel = 'new' | 'learning' | 'familiar' | 'mastered';
 
 export type Theme = 'light' | 'dark' | 'system';

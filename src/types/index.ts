@@ -2,6 +2,7 @@ export type {
   JlptLevel,
   Skill,
   ItemType,
+  ReadingStatus,
   MasteryLevel,
   Theme,
 } from '@/types/domain';

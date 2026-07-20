@@ -1,0 +1,72 @@
+import type { LearningItem } from '@/types/learningItem';
+import { cn } from '@/utils/cn';
+import {
+  formatKunyomiDisplay,
+  formatOnyomiDisplay,
+  isReadingUnset,
+  READING_NONE_LABEL,
+} from '@/utils/kanjiReading';
+
+type KanjiReadingLineProps = {
+  label: string;
+  display: string;
+  unset: boolean;
+};
+
+function KanjiReadingLine({ label, display, unset }: KanjiReadingLineProps) {
+  return (
+    <p className="text-sm text-slate-600 dark:text-slate-400">
+      {label}:{' '}
+      <span
+        className={cn(
+          unset && 'italic text-amber-700 dark:text-amber-300',
+          display === READING_NONE_LABEL && 'text-slate-500 dark:text-slate-400',
+        )}
+      >
+        {display}
+      </span>
+    </p>
+  );
+}
+
+export function KanjiReadingsBlock({ item }: { item: LearningItem }) {
+  const standaloneDisplay = formatKunyomiDisplay(item.readingStatus, item.reading);
+  const onyomiDisplay = formatOnyomiDisplay(item.onyomiStatus, item.onyomi);
+  const kunyomiDisplay = formatKunyomiDisplay(item.kunyomiStatus, item.kunyomi);
+
+  return (
+    <div className="space-y-1">
+      <KanjiReadingLine
+        label="Kun (standalone)"
+        display={standaloneDisplay}
+        unset={isReadingUnset(item.readingStatus, item.reading)}
+      />
+      <KanjiReadingLine
+        label="On"
+        display={onyomiDisplay}
+        unset={isReadingUnset(item.onyomiStatus, item.onyomi)}
+      />
+      <KanjiReadingLine
+        label="Kun"
+        display={kunyomiDisplay}
+        unset={isReadingUnset(item.kunyomiStatus, item.kunyomi)}
+      />
+    </div>
+  );
+}
+
+export function KanjiFrontReading({ item }: { item: LearningItem }) {
+  const display = formatKunyomiDisplay(item.readingStatus, item.reading);
+  const unset = isReadingUnset(item.readingStatus, item.reading);
+
+  return (
+    <p
+      className={cn(
+        'text-lg text-slate-500 dark:text-slate-400',
+        unset && 'italic text-amber-700 dark:text-amber-300',
+      )}
+    >
+      {display}
+    </p>
+  );
+}

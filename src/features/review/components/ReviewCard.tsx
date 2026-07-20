@@ -1,5 +1,6 @@
 import type { LearningItem } from '@/types/learningItem';
 import { cn } from '@/utils/cn';
+import { KanjiFrontReading, KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
 
 type ReviewCardProps = {
   item: LearningItem;
@@ -22,7 +23,9 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
 
       <div className="space-y-2 text-center">
         <p className="text-4xl font-medium text-slate-900 dark:text-slate-100">{item.japanese}</p>
-        {item.reading ? (
+        {item.type === 'kanji' ? (
+          <KanjiFrontReading item={item} />
+        ) : item.reading ? (
           <p className="text-lg text-slate-500 dark:text-slate-400">{item.reading}</p>
         ) : null}
       </div>
@@ -46,13 +49,7 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
           {item.meaningAlt ? (
             <p className="text-sm text-slate-600 dark:text-slate-400">{item.meaningAlt}</p>
           ) : null}
-          {item.type === 'kanji' && (item.onyomi || item.kunyomi) ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {item.onyomi ? `On: ${item.onyomi}` : null}
-              {item.onyomi && item.kunyomi ? ' · ' : null}
-              {item.kunyomi ? `Kun: ${item.kunyomi}` : null}
-            </p>
-          ) : null}
+          {item.type === 'kanji' ? <KanjiReadingsBlock item={item} /> : null}
           {item.example ? (
             <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
               <p className="text-slate-900 dark:text-slate-100">{item.example}</p>

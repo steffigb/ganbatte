@@ -12,10 +12,15 @@ import {
   upsertItemTopic,
 } from '@/lib/db';
 import type { ItemFormValues } from '@/features/items/itemFormTypes';
+import { createBlankKanjiReadingFields, kanjiReadingFieldsFromItem } from '@/features/items/itemFormTypes';
 import type { LearningItem } from '@/types/learningItem';
 import { nowIso } from '@/utils/date';
 import { createId } from '@/utils/id';
 import { skillForItemType } from '@/utils/itemHelpers';
+import {
+  kanjiReadingFieldToStored,
+  validateKanjiReadingFields,
+} from '@/utils/kanjiReading';
 
 export async function loadItemFormValues(
   itemId: string,
@@ -48,6 +53,7 @@ export async function loadItemFormValues(
     topicIds: topicLinks.map((link) => link.topicId),
     sourceIds: sourceLinks.map((link) => link.sourceId),
     sourceReferences,
+    ...(item.type === 'kanji' ? kanjiReadingFieldsFromItem(item) : {}),
   };
 }
 
@@ -149,14 +155,13 @@ export async function saveItemWithRelations(
   const itemId = values.id ?? createId();
   const existing = values.id ? await getItemById(values.id) : undefined;
 
-  const item: LearningItem = {
+  const baseItem: LearningItem = {
     id: itemId,
     userId,
     type: values.type,
     level: values.level,
     skill: skillForItemType(values.type),
     japanese,
-    reading: values.reading?.trim() || undefined,
     meaning,
     notes: values.notes?.trim() || undefined,
     tags: existing?.tags ?? [],
@@ -164,6 +169,42 @@ export async function saveItemWithRelations(
     createdAt: existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
   };
+
+  let item: LearningItem;
+
+  if (values.type === 'kanji') {
+    const standaloneKun = values.standaloneKun ?? createBlankKanjiReadingFields().standaloneKun!;
+    const onyomiField = values.onyomi ?? createBlankKanjiReadingFields().onyomi!;
+    const kunyomiField = values.kunyomi ?? createBlankKanjiReadingFields().kunyomi!;
+
+    const standalone = kanjiReadingFieldToStored(standaloneKun);
+    const onyomi = kanjiReadingFieldToStored(onyomiField);
+    const kunyomi = kanjiReadingFieldToStored(kunyomiField);
+
+    validateKanjiReadingFields({
+      reading: standalone.value,
+      readingStatus: standalone.status,
+      onyomi: onyomi.value,
+      onyomiStatus: onyomi.status,
+      kunyomi: kunyomi.value,
+      kunyomiStatus: kunyomi.status,
+    });
+
+    item = {
+      ...baseItem,
+      reading: standalone.value,
+      readingStatus: standalone.status,
+      onyomi: onyomi.value,
+      onyomiStatus: onyomi.status,
+      kunyomi: kunyomi.value,
+      kunyomiStatus: kunyomi.status,
+    };
+  } else {
+    item = {
+      ...baseItem,
+      reading: values.reading?.trim() || undefined,
+    };
+  }
 
   await upsertItem(item);
   await syncItemTopics(userId, itemId, values.topicIds);

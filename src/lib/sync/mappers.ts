@@ -2,6 +2,7 @@ import type { AppSettings } from '@/types/appSettings';
 import type { ImportBatch } from '@/types/importBatch';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
+import { readingStatusFromRemote } from '@/utils/kanjiReading';
 import type { Review } from '@/types/review';
 import type { Source } from '@/types/source';
 import type { StudySession } from '@/types/studySession';
@@ -75,6 +76,10 @@ export function sourceToRemote(source: Source): RemoteRow {
 }
 
 export function learningItemFromRemote(row: RemoteRow): LearningItem {
+  const reading = optionalString(row.reading);
+  const onyomi = optionalString(row.onyomi);
+  const kunyomi = optionalString(row.kunyomi);
+
   return {
     id: String(row.id),
     userId: String(row.user_id),
@@ -82,14 +87,17 @@ export function learningItemFromRemote(row: RemoteRow): LearningItem {
     level: row.level as LearningItem['level'],
     skill: row.skill as LearningItem['skill'],
     japanese: String(row.japanese),
-    reading: optionalString(row.reading),
+    reading,
+    readingStatus: readingStatusFromRemote(row.reading_status, reading),
     meaning: String(row.meaning),
     meaningAlt: optionalString(row.meaning_alt),
     example: optionalString(row.example),
     exampleReading: optionalString(row.example_reading),
     notes: optionalString(row.notes),
-    onyomi: optionalString(row.onyomi),
-    kunyomi: optionalString(row.kunyomi),
+    onyomi,
+    onyomiStatus: readingStatusFromRemote(row.onyomi_status, onyomi),
+    kunyomi,
+    kunyomiStatus: readingStatusFromRemote(row.kunyomi_status, kunyomi),
     passageText: optionalString(row.passage_text),
     audioStoragePath: optionalString(row.audio_storage_path),
     audioUrl: optionalString(row.audio_url),
@@ -113,13 +121,16 @@ export function learningItemToRemote(item: LearningItem): RemoteRow {
     skill: item.skill,
     japanese: item.japanese,
     reading: item.reading ?? null,
+    reading_status: item.readingStatus ?? 'unset',
     meaning: item.meaning,
     meaning_alt: item.meaningAlt ?? null,
     example: item.example ?? null,
     example_reading: item.exampleReading ?? null,
     notes: item.notes ?? null,
     onyomi: item.onyomi ?? null,
+    onyomi_status: item.onyomiStatus ?? 'unset',
     kunyomi: item.kunyomi ?? null,
+    kunyomi_status: item.kunyomiStatus ?? 'unset',
     passage_text: item.passageText ?? null,
     audio_storage_path: item.audioStoragePath ?? null,
     audio_url: item.audioUrl ?? null,

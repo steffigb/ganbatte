@@ -1,4 +1,4 @@
-import type { ItemType, JlptLevel, Skill } from '@/types/domain';
+import type { ItemType, JlptLevel, ReadingStatus, Skill } from '@/types/domain';
 import type { SoftDeletable, Timestamps, UserOwned } from '@/types/common';
 
 export interface Question {
@@ -15,13 +15,16 @@ export interface LearningItem extends Timestamps, SoftDeletable, UserOwned {
   skill: Skill;
   japanese: string;
   reading?: string;
+  readingStatus?: ReadingStatus;
   meaning: string;
   meaningAlt?: string;
   example?: string;
   exampleReading?: string;
   notes?: string;
   onyomi?: string;
+  onyomiStatus?: ReadingStatus;
   kunyomi?: string;
+  kunyomiStatus?: ReadingStatus;
   passageText?: string;
   audioStoragePath?: string;
   audioUrl?: string;
