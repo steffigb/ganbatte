@@ -1,0 +1,4 @@
+type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
+grammar,N4,grammar,te-form,てから,てから,nachdem,食べてから寝ます,たべてからねます,Nach dem Essen gehe ich schlafen.,Try! N4,Unit 8,n4-grammar,
+grammar,N4,grammar,obligation,なければならない,なければならない,müssen,宿題をしなければならない,しゅくだいをしなければならない,Ich muss Hausaufgaben machen.,Eigen,,,
+grammar,N5,grammar,basic-polite,です,です,sein (höfliche Form),学生です,がくせいです,Ich bin Student.,,,,
