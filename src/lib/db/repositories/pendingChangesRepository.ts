@@ -1,12 +1,28 @@
 import { db } from '@/lib/db/database';
 import { ensureSyncMeta } from '@/lib/db/deviceId';
 import { nowIso } from '@/lib/db/repositories/helpers';
+import { SYNC_TABLE_ORDER } from '@/lib/sync/tables';
 import type {
   PendingChange,
   PendingChangeOperation,
   SyncStatus,
   SyncTableName,
 } from '@/types/sync';
+
+const TABLE_PUSH_ORDER = new Map(SYNC_TABLE_ORDER.map((table, index) => [table, index]));
+
+function sortPendingChanges(changes: PendingChange[]): PendingChange[] {
+  return [...changes].sort((left, right) => {
+    const leftOrder = TABLE_PUSH_ORDER.get(left.table) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = TABLE_PUSH_ORDER.get(right.table) ?? Number.MAX_SAFE_INTEGER;
+
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+
+    return left.createdAt.localeCompare(right.createdAt);
+  });
+}
 
 async function refreshPendingChangeCount(): Promise<number> {
   const count = await db.pendingChanges.count();
@@ -40,7 +56,8 @@ export async function enqueuePendingChange(
 }
 
 export async function listPendingChanges(): Promise<PendingChange[]> {
-  return db.pendingChanges.orderBy('createdAt').toArray();
+  const changes = await db.pendingChanges.orderBy('createdAt').toArray();
+  return sortPendingChanges(changes);
 }
 
 export async function countPendingChanges(): Promise<number> {

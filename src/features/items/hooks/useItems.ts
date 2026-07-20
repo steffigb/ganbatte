@@ -69,8 +69,12 @@ export function useItems(options: UseItemsOptions = {}) {
 
   const removeItem = useCallback(
     async (id: string) => {
-      await softDeleteItem(id);
-      reload();
+      try {
+        await softDeleteItem(id);
+        reload();
+      } catch (cause) {
+        throw cause instanceof Error ? cause : new Error('Failed to delete item');
+      }
     },
     [reload],
   );

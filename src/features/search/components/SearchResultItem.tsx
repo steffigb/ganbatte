@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { routes } from '@/app/routes.config';
 import type { ItemSearchResult, TopicSearchResult } from '@/lib/search';
+import { cn } from '@/utils/cn';
 
 type SearchResultItemProps = {
   result: ItemSearchResult | TopicSearchResult;
@@ -55,15 +56,27 @@ export function SearchResultItem({ result }: SearchResultItemProps) {
   const { item } = result;
 
   return (
-    <li className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
-      <div className="min-w-0 space-y-0.5">
+    <li
+      className={cn(
+        'flex items-start justify-between gap-3 px-4 py-3 text-sm',
+        item.type === 'kanji' && 'py-4',
+      )}
+    >
+      <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-medium text-slate-900 dark:text-slate-100">
-            {item.japanese}
+          <div className="min-w-0">
+            <p
+              className={cn(
+                'font-medium text-slate-900 dark:text-slate-100',
+                item.type === 'kanji' ? 'text-4xl leading-none' : 'text-base',
+              )}
+            >
+              {item.japanese}
+            </p>
             {item.reading ? (
-              <span className="ml-2 font-normal text-slate-500">({item.reading})</span>
+              <p className="text-slate-500 dark:text-slate-400">{item.reading}</p>
             ) : null}
-          </p>
+          </div>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
             {item.type}
           </span>
