@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-20 (MVP step 10 — global search)  
+> **Last updated:** 2026-07-21 (post–step 10: delete UX, bulk cleanup, kanji tri-state readings)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,20 +12,21 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | ✅ Done | EU project; `initial_schema` + `complete_schema` applied |
+| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` applied; **`kanji_reading_status` pending `supabase db push`** |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
 | CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
 | SRS + features | ✅ Done | Steps 1–9 complete |
-| Search & polish | 🔄 In progress | Step 10 done; steps 11–15 remain |
+| Search & polish | 🔄 In progress | Step 10 done; delete/cleanup + kanji readings done; step 11 (bulk import) next |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
 - [x] Supabase project created (EU region)
 - [x] `supabase init`, linked project, migrations in `supabase/migrations/`
 - [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`)
+- [ ] Remote schema: `20260720230000_kanji_reading_status` — **owner runs `supabase db push`**
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -35,7 +36,7 @@
 - [x] Feature folder stubs (`dashboard`, `review`, `search`, `import`, `settings`, `learn`)
 - [x] Supabase client (`src/lib/supabase/client.ts`)
 - [x] Auth — `AuthProvider`, login form, `RequireAuth`, session persistence
-- [x] Shared UI primitives — `Button`, `Input`, `Select`, `Textarea`, `FormAlert` (`src/components/ui/`)
+- [x] Shared UI primitives — `Button`, `Input`, `Select`, `Textarea`, `FormAlert`, `ConfirmDialog` (`src/components/ui/`)
 - [x] Domain types mirroring §8 (`src/types/`)
 - [x] Dexie schema — 12 stores mirroring Postgres + `syncMeta` / `pendingChanges` (`src/lib/db/`)
 - [x] Repository layer — upsert/list/get per entity; writes enqueue `pendingChanges`
@@ -61,9 +62,15 @@
 - [x] **Smart study queue** — due + weakness boost (top 3 topics) + N5 recap (`buildReviewQueue.ts`)
 - [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`)
 - [x] **Global search** — `lib/search/`, `features/search/`; debounced `/search`, filters, grouped results, Japanese normalization
+- [x] **Delete UX** — `ConfirmDialog`; confirm + success feedback on item delete (`ItemList`); larger kanji in Learn/Search
+- [x] **Bulk data cleanup** — `lib/maintenance/deleteKanjiItems.ts`; Settings danger zone (delete all kanji + related SRS/links/batches); Topics “Delete all topics”
+- [x] **Sync push order** — pending changes sorted by `SYNC_TABLE_ORDER` before push (FK-safe batch deletes)
+- [x] **Kanji tri-state readings** — `ReadingStatus` (`unset` | `none` | `set`) on `reading`, `onyomi`, `kunyomi`; form + review UI; `utils/kanjiReading.ts`; migration `20260720230000_kanji_reading_status.sql`
+- [x] **Import templates + Genki CSVs** — `templates/import/*.csv` (English `meaning`, optional `notes`); working source files in `data/genki1-n5-kanji.csv`, `data/genki2-n4-kanji.csv`
 
 ### Next up
-- [ ] Bulk import CSV (MVP step 11)
+- [ ] Owner: `supabase db push` — apply `20260720230000_kanji_reading_status.sql` before syncing kanji status fields
+- [ ] Bulk import CSV (MVP step 11) — re-implement using tri-state kanji columns + `parseImportReadingCell()` (earlier prototype removed)
 
 ### Dev hint — test on phone before deploy
 
@@ -224,6 +231,27 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - Optimizer: `@open-spaced-repetition/binding` or export reviews → optimize offline
 - Settings: `srsAlgorithm: 'sm2' | 'fsrs'`; optional `fsrsParams` after optimization; readiness hints per [§14.5](#145-srs-algorithm--fsrs-migration)
 
+### ADR-015: Kanji reading tri-state + semantics
+**Decision:** Each kanji reading field (`reading`, `onyomi`, `kunyomi`) has an explicit **`ReadingStatus`**: `unset` | `none` | `set`.  
+**Semantics:**
+- `reading` = kun reading when the kanji stands alone as a word (e.g. 右 → みぎ)
+- `onyomi` = on readings (display in **katakana**)
+- `kunyomi` = kun readings in compounds (display in **hiragana**)
+- **`unset`** — not entered yet (UI: *not set*, amber italic)
+- **`none`** — confirmed absent (UI: `—`)
+- **`set`** — value stored and shown (normalized display script per field)
+
+**CSV / import cells** (`parseImportReadingCell` in `utils/kanjiReading.ts`):
+- Empty cell → `unset`
+- `-`, `—`, `–`, `none`, `n/a` → `none` (prefer `-` when typing)
+- Any other text → `set` (trimmed value)
+
+**Rejected:** Inferring primary `reading` from `exampleReading` at display time — show stored values only.
+
+**Alternatives considered:** Boolean “has reading” flags (rejected: cannot distinguish unset vs confirmed none); single combined reading string (rejected: loses on/kun/standalone distinction).
+
+**Migration:** `20260720230000_kanji_reading_status.sql` adds `reading_status`, `onyomi_status`, `kunyomi_status` on `learning_items`. Owner applies via `supabase db push` (ADR-013).
+
 ---
 
 ## 4. Core Principles
@@ -274,11 +302,11 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 #### Content & Learning
 - [ ] Five skills: Vocabulary, Kanji, Grammar, Reading, Listening
 - [ ] Levels: N5, N4
-- [ ] Topics (optionally hierarchical) — *flat list CRUD done; hierarchy pending*
-- [ ] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done*
+- [ ] Topics (optionally hierarchical) — *flat list CRUD done; **topics optional on items**; hierarchy pending*
+- [x] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done; kanji tri-state readings*
 - [ ] SRS (**SM-2** ✅ step 7; **FSRS** opt-in later — ADR-014) for vocabulary, kanji, grammar
 - [x] Manual single-item create/edit — `/add`, edit via `?edit=`, browse `/learn/:skill`
-- [ ] Bulk import — CSV/TSV, paste text, column mapping
+- [ ] Bulk import — CSV/TSV, paste text, column mapping — *templates + Genki CSVs ready; `/import` placeholder; UI pending (step 11)*
 - [x] Source metadata — multiple sources per item — *checkbox picker + per-source reference*
 - [ ] Duplicate handling — skip / attach source / update — *manual create: block duplicate; import flow pending*
 - [ ] Import preview with validation and error list
@@ -314,11 +342,11 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 #### UI
 - [x] Dashboard — *real widgets (step 9)*
 - [x] Study today / review session — `/study` SM-2 + weakness + N5 recap ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
-- [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete *(topic/source filters pending)*
+- [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete with confirm *(topic/source filters pending)*
 - [x] Global search — `/search` with debounced query, filters, grouped results *(step 10)*
 - [x] Add — single item form on `/add` *(bulk import + CSV templates pending)*
 - [x] Topics & sources management — `/topics`
-- [x] Settings page route — `/settings` *(placeholder; exam date edit + theme in step 14)*
+- [x] Settings page route — `/settings` *(danger zone: bulk delete kanji; exam date / theme edit still step 14)*
 - [x] Sync status in app header — last synced, pending, offline *(step 6)*
 - [ ] Theme: light / dark / system
 
@@ -450,6 +478,9 @@ LearningItem {
   // Kanji-specific
   onyomi?: string
   kunyomi?: string
+  readingStatus?: "unset" | "none" | "set"   // kun when kanji stands alone
+  onyomiStatus?: "unset" | "none" | "set"
+  kunyomiStatus?: "unset" | "none" | "set"
 
   // Reading/listening
   passageText?: string
@@ -469,6 +500,20 @@ LearningItem {
   deletedAt?: string
 }
 ```
+
+**`type` vs `skill`:** Keep both fields. `type` is the item kind (`word`, `kanji`, …); `skill` is the study bucket (`vocabulary`, `kanji`, …). Vocabulary items use `type: "word"` and `skill: "vocabulary"`. Do not collapse into one field.
+
+### 8.4.1 Kanji readings (implemented)
+
+| Field | Meaning | Display when `set` |
+|-------|---------|-------------------|
+| `reading` + `readingStatus` | Kun when kanji is a standalone word | Hiragana |
+| `onyomi` + `onyomiStatus` | On readings | Katakana |
+| `kunyomi` + `kunyomiStatus` | Kun readings (compounds) | Hiragana |
+
+**Form (`KanjiReadingField`):** text input + “No … reading” checkbox → stores `none` with empty value.  
+**Review (`KanjiReadingsBlock`):** always shows all three lines on card back; front shows standalone kun only.  
+**Helpers:** `src/utils/kanjiReading.ts` — display, validation, `parseImportReadingCell()` for step 11.
 
 ### 8.5 ItemSource
 
@@ -614,7 +659,7 @@ Supabase (EU region)
 
 topics
 sources
-learning_items
+learning_items          -- incl. reading_status, onyomi_status, kunyomi_status (migration 20260720230000)
 item_sources
 item_topics          -- optional junction: item_id ↔ topic_id
 reviews
@@ -704,7 +749,16 @@ supabase/
 
 #### Initial migration checklist
 
-The schema is split across two migrations (`initial_schema` + `complete_schema`):
+Applied on remote:
+
+- [x] `20260713163434_initial_schema.sql`
+- [x] `20260713170000_complete_schema.sql`
+
+Pending on remote (file committed; owner applies):
+
+- [ ] `20260720230000_kanji_reading_status.sql` — `reading_status`, `onyomi_status`, `kunyomi_status` on `learning_items`
+
+The schema is split across the first two migrations (`initial_schema` + `complete_schema`):
 
 - [x] All tables from §9.2
 - [x] `user_id` FK to `auth.users` on every table
@@ -796,6 +850,7 @@ Conflicts are rare (single user). Fallback: newer `updatedAt` wins.
 - **Required:** app start, after study session
 - **Optional:** every 5–15 min when online, manual "Sync now" button
 - **On bulk import:** push after import completes
+- **Push order:** `pendingChanges` sorted by `SYNC_TABLE_ORDER` before upload (parents before children; important for bulk deletes)
 
 ### 11.4 Sync status UI
 - Last synced timestamp
@@ -816,27 +871,43 @@ Conflicts are rare (single user). Fallback: newer `updatedAt` wins.
 
 ## 12. Bulk Import
 
+> **Status:** CSV templates and Genki source files exist; **`/import` UI not implemented** (MVP step 11). An earlier import prototype was removed; re-build must use kanji tri-state columns ([ADR-015](#adr-015-kanji-reading-tri-state--semantics)).
+
 ### 12.1 CSV minimum
 
 ```csv
 type,level,skill,japanese,meaning
-word,N4,vocabulary,電車,Zug
-kanji,N4,kanji,運,transportieren
-grammar,N4,grammar,てから,nachdem
+word,N4,vocabulary,電車,train
+kanji,N4,kanji,運,transport; carry
+grammar,N4,grammar,てから,after doing
 ```
+
+**Meaning language:** English for now (`meaning` column). `AppSettings.locale` remains `de` for UI; content fields are not localized yet.
 
 ### 12.2 CSV recommended (full)
 
+**Vocabulary / grammar** — same columns as before; optional `notes` last.
+
+**Kanji** — use `templates/import/kanji-template.csv`:
+
 ```csv
-type,level,skill,topics,reading,german,example,source,source_ref,tags,notes
-word,N4,vocabulary,"transport,verbs",電車,でんしゃ,Zug,電車に乗ります,Try! N4,Unit 3,n4-core,
-grammar,N4,grammar,te-form,なければならない,,müssen,宿題をしなければならない,Eigen,,,
+type,level,skill,topics,japanese,reading,onyomi,kunyomi,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
+kanji,N5,kanji,direction,右,みぎ,ウ、ユウ,みぎ,right,右手,みぎて,right hand,,,kanji;n5,
+kanji,N5,kanji,time,先,さき,セン,さき,previous; ahead,先生,せんせい,teacher,,,kanji;n5,On'yomi common in compounds like 先生
 ```
 
 Column notes:
-- `topics` — comma-separated; create if missing (configurable)
+- `topics` — comma-separated; optional (items may have zero topics)
+- `reading`, `onyomi`, `kunyomi` — tri-state cells (see [ADR-015](#adr-015-kanji-reading-tri-state--semantics)): empty = unset, `-` = none, text = set
+- `meaning` — English; semicolon-separated alternatives OK
+- `example`, `example_reading`, `example_meaning` — optional compound example
 - `source` / `source_ref` — optional; create Source if missing
-- `german` — use if `meaning` is EN; otherwise `meaning` = DE
+- `notes` — optional free text (last column on all templates)
+- Legacy column name `german` — treat as alias for `meaning` if present in old files
+
+**Working source files (not imported until step 11 UI):**
+- `data/genki1-n5-kanji.csv`
+- `data/genki2-n4-kanji.csv`
 
 ### 12.3 Import flow
 
@@ -855,14 +926,20 @@ Column notes:
 ### 12.5 Defaults for missing fields
 
 - Missing `level` → N4
-- Missing `skill` → derive from `type`
-- Missing `topic` → "Import [date]" or "Unsorted"
+- Missing `skill` → derive from `type` (`word` → `vocabulary`, etc.)
+- Missing `topic` → leave item untagged (no forced “Import [date]” topic)
 
 ### 12.6 CSV templates to ship
 
-- `vocabulary-template.csv`
-- `kanji-template.csv`
-- `grammar-template.csv`
+- [x] `templates/import/vocabulary-template.csv`
+- [x] `templates/import/kanji-template.csv` — tri-state reading columns + optional `notes`
+- [x] `templates/import/grammar-template.csv`
+
+### 12.7 Import implementation notes (step 11)
+
+- Use `parseImportReadingCell()` from `utils/kanjiReading.ts` for `reading`, `onyomi`, `kunyomi`
+- Kanji rows must persist `*Status` fields alongside optional string values
+- After bulk delete + re-import, run **Sync now** so remote matches local
 
 ---
 
@@ -1005,6 +1082,13 @@ Aggregate: item → topic → skill → level → overall readiness
 
 **Constants (defaults):** `FSRS_HINT_INFO = 100`, `FSRS_HINT_RECOMMENDED_REVIEWS = 400`, `FSRS_HINT_RECOMMENDED_ITEMS = 50`, `FSRS_HINT_STRONG = 1000`
 
+### 14.6 Kanji review display (implemented)
+
+- **Front:** kanji character + standalone kun (`reading` / `readingStatus`) when set; meaning hidden until flip
+- **Back:** `KanjiReadingsBlock` — always three lines: Kun (standalone), On, Kun — each shows value, `—`, or *not set*
+- **Learn / Search lists:** kanji shown larger; reading on its own line (no brackets)
+- No runtime inference from `exampleReading` — only stored fields ([ADR-015](#adr-015-kanji-reading-tri-state--semantics))
+
 ---
 
 ## 15. Audio (Listening)
@@ -1090,11 +1174,13 @@ Use OGG or lower bitrate to save space if needed.
 8. [x] TopicProgress computation — `lib/topicProgress/`, `/topics` mastery display
 9. [x] Dashboard + "Study today" — readiness widgets, mixed review queue (§14.1)
 10. [x] Global search — `lib/search/`, debounced `/search`, filters, grouped results (§13)
-11. [ ] Bulk import CSV
+10b. [x] Delete UX + bulk cleanup — `ConfirmDialog`, Settings danger zone, Topics delete-all, `lib/maintenance/`
+10c. [x] Kanji tri-state readings — types, form, review UI, sync mappers, migration file ([ADR-015](#adr-015-kanji-reading-tri-state--semantics))
+11. [ ] Bulk import CSV — `/import` UI; wire `parseImportReadingCell()` + Genki CSVs
 12. [ ] Audio upload + playback (Storage)
 13. [ ] JSON export/import (backup)
-14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(sync status already in header)*
-15. [ ] Polish — CSV templates, dark mode, error handling
+14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(partial: danger zone done; sync status in header)*
+15. [ ] Polish — dark mode, error handling *(CSV templates shipped)*
 
 ---
 
@@ -1140,6 +1226,7 @@ Supabase is primary; JSON export is additional safety net.
 - [x] Junction table `item_topics` vs `topicIds[]` array on item — **`item_topics` table in migrations**
 - [ ] Signed URL expiry duration for audio
 - [ ] Default exam date exact day (early December 2026 — set when JLPT date confirmed)
+- [ ] **`item_examples` child table** — multiple example sentences per kanji/item (discussed; deferred)
 - [ ] Supabase Realtime in v2 — needed or is delta sync sufficient?
 - [ ] Audio offline cache strategy in v2 (Cache API vs IndexedDB blobs)
 - [ ] Optional password encryption for JSON export backup
@@ -1502,6 +1589,13 @@ const id = createId();
 | 2026-07-20 | Dashboard + smart study queue — readiness widgets, weakness boost, N5 recap (MVP step 9) |
 | 2026-07-20 | Sync fix — junction tables upsert on natural key (`item_topics`, `item_sources`, `user_progress`) |
 | 2026-07-20 | Global search — `lib/search/`, debounced `/search`, filters, grouped results, Japanese normalization (MVP step 10) |
+| 2026-07-20 | Delete confirm + success feedback on item delete; larger kanji in Learn/Search; `ConfirmDialog` |
+| 2026-07-20 | Bulk cleanup — `lib/maintenance/deleteKanjiItems.ts`; Settings danger zone; Topics delete-all; sync push order fix |
+| 2026-07-21 | Kanji **tri-state readings** — `ReadingStatus`, form + review UI, `parseImportReadingCell()` (ADR-015) |
+| 2026-07-21 | CSV templates + `data/genki1-n5-kanji.csv` / `data/genki2-n4-kanji.csv`; English `meaning`; `-` = none in reading cells |
+| 2026-07-21 | Topics **optional** on items; keep `type` + `skill` as separate fields; no `reading` inference from examples |
+| 2026-07-21 | Migration `20260720230000_kanji_reading_status.sql` committed; owner applies with `supabase db push` |
+| 2026-07-21 | Bulk import UI (step 11) still pending — earlier prototype removed; rebuild against new kanji schema |
 
 ---
 
