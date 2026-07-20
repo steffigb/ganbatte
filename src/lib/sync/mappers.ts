@@ -1,5 +1,7 @@
 import type { AppSettings } from '@/types/appSettings';
 import type { ImportBatch } from '@/types/importBatch';
+import type { ItemExample } from '@/types/itemExample';
+import { exampleReadingKey } from '@/utils/exampleReading';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
 import { readingStatusFromRemote } from '@/utils/kanjiReading';
@@ -190,6 +192,38 @@ export function itemTopicToRemote(link: ItemTopic): RemoteRow {
     topic_id: link.topicId,
     created_at: link.createdAt,
     updated_at: link.updatedAt,
+  };
+}
+
+export function itemExampleFromRemote(row: RemoteRow): ItemExample {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    itemId: String(row.item_id),
+    example: String(row.example),
+    exampleReading: exampleReadingKey(optionalString(row.example_reading)),
+    exampleMeaning: optionalString(row.example_meaning),
+    sortOrder: optionalNumber(row.sort_order) ?? 0,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+    deletedAt: optionalString(row.deleted_at),
+  };
+}
+
+export function itemExampleToRemote(example: ItemExample): RemoteRow {
+  const reading = exampleReadingKey(example.exampleReading);
+
+  return {
+    id: example.id,
+    user_id: example.userId,
+    item_id: example.itemId,
+    example: example.example,
+    example_reading: reading || null,
+    example_meaning: example.exampleMeaning ?? null,
+    sort_order: example.sortOrder,
+    created_at: example.createdAt,
+    updated_at: example.updatedAt,
+    deleted_at: example.deletedAt ?? null,
   };
 }
 

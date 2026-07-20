@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { routes } from '@/app/routes.config';
 import type { ItemSearchResult, TopicSearchResult } from '@/lib/search';
 import { cn } from '@/utils/cn';
+import { formatItemMeaning } from '@/utils/meaningText';
 
 type SearchResultItemProps = {
   result: ItemSearchResult | TopicSearchResult;
@@ -86,7 +87,9 @@ export function SearchResultItem({ result }: SearchResultItemProps) {
             </span>
           ) : null}
         </div>
-        <p className="text-slate-600 dark:text-slate-400">{item.meaning}</p>
+        <p className="text-slate-600 dark:text-slate-400">
+          {formatItemMeaning(item.meaning, item.meaningAlt)}
+        </p>
         <p className="text-slate-500 dark:text-slate-500">
           {item.level} · {item.skill}
         </p>

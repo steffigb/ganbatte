@@ -1,1 +1,2 @@
-// Import feature — CSV bulk import (MVP step 11)
+export { ImportView } from '@/features/import/components/ImportView';
+export { useImport } from '@/features/import/hooks/useImport';

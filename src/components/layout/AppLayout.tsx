@@ -10,6 +10,7 @@ const navItems = [
   { to: routes.learn('vocabulary'), label: 'Learn' },
   { to: routes.topics, label: 'Topics' },
   { to: routes.add, label: 'Add' },
+  { to: routes.import, label: 'Import' },
   { to: routes.settings, label: 'Settings' },
 ];
 

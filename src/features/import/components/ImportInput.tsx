@@ -1,0 +1,78 @@
+import { useRef } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Textarea';
+
+type ImportInputProps = {
+  csvText: string;
+  filename?: string;
+  isLoading: boolean;
+  onCsvTextChange: (value: string) => void;
+  onFileLoaded: (text: string, filename: string) => void;
+  onPreview: () => void;
+};
+
+export function ImportInput({
+  csvText,
+  filename,
+  isLoading,
+  onCsvTextChange,
+  onFileLoaded,
+  onPreview,
+}: ImportInputProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+        <p className="font-medium text-slate-800 dark:text-slate-100">CSV format</p>
+        <p className="mt-1">
+          Multiple meanings in one cell: use <code className="text-xs"> · </code> (mediopunkt).
+          Import also accepts <code className="text-xs">/</code> or <code className="text-xs">;</code> and
+          stores them as mediopunkt.
+        </p>
+        <p className="mt-1">
+          Use the templates in <code className="text-xs">templates/import/</code>. Required
+          columns: <code className="text-xs">type</code>, <code className="text-xs">japanese</code>,{' '}
+          <code className="text-xs">meaning</code>. Kanji reading cells: empty = not set,{' '}
+          <code className="text-xs">-</code> = none, text = value.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv,text/plain"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) {
+              return;
+            }
+
+            void file.text().then((text) => {
+              onFileLoaded(text, file.name);
+            });
+          }}
+        />
+        <Button type="button" onClick={() => fileInputRef.current?.click()}>
+          Choose CSV file
+        </Button>
+        {filename ? <span className="text-sm text-slate-600 dark:text-slate-400">{filename}</span> : null}
+      </div>
+
+      <Textarea
+        id="import-csv-text"
+        label="Or paste CSV text"
+        value={csvText}
+        onChange={(event) => onCsvTextChange(event.target.value)}
+        className="min-h-48 font-mono text-xs"
+        placeholder="type,level,skill,japanese,meaning"
+      />
+
+      <Button type="button" disabled={!csvText.trim() || isLoading} onClick={onPreview}>
+        {isLoading ? 'Parsing…' : 'Preview import'}
+      </Button>
+    </div>
+  );
+}

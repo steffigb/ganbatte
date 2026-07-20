@@ -6,6 +6,7 @@ export type SyncTableName =
   | 'learningItems'
   | 'itemSources'
   | 'itemTopics'
+  | 'itemExamples'
   | 'reviews'
   | 'userProgress'
   | 'studySessions'

@@ -7,6 +7,7 @@ import { FormAlert } from '@/components/ui/FormAlert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { LearningItem } from '@/types/learningItem';
 import { cn } from '@/utils/cn';
+import { formatItemMeaning } from '@/utils/meaningText';
 
 type ItemListProps = {
   items: LearningItem[];
@@ -130,7 +131,9 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
             {item.reading ? (
               <p className="text-slate-500 dark:text-slate-400">{item.reading}</p>
             ) : null}
-            <p className="text-slate-600 dark:text-slate-400">{item.meaning}</p>
+            <p className="text-slate-600 dark:text-slate-400">
+              {formatItemMeaning(item.meaning, item.meaningAlt)}
+            </p>
             <p className="text-slate-500 dark:text-slate-500">
               {item.level} · {item.type}
             </p>

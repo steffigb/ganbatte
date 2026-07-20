@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 import type { AppSettings } from '@/types/appSettings';
 import type { ImportBatch } from '@/types/importBatch';
+import type { ItemExample } from '@/types/itemExample';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
 import type { Review } from '@/types/review';
@@ -19,6 +20,7 @@ export class GanbatteDB extends Dexie {
   learningItems!: EntityTable<LearningItem, 'id'>;
   itemSources!: EntityTable<ItemSource, 'id'>;
   itemTopics!: EntityTable<ItemTopic, 'id'>;
+  itemExamples!: EntityTable<ItemExample, 'id'>;
   reviews!: EntityTable<Review, 'id'>;
   userProgress!: EntityTable<UserProgress, 'id'>;
   studySessions!: EntityTable<StudySession, 'id'>;
@@ -30,7 +32,7 @@ export class GanbatteDB extends Dexie {
   constructor() {
     super(DB_NAME);
 
-    this.version(DB_SCHEMA_VERSION).stores({
+    this.version(1).stores({
       topics:
         'id, userId, level, skill, name, parentTopicId, updatedAt, deletedAt, [userId+level+skill]',
       sources: 'id, userId, label, updatedAt, [userId+label]',
@@ -46,6 +48,16 @@ export class GanbatteDB extends Dexie {
       appSettings: 'id, userId, updatedAt',
       syncMeta: 'id, deviceId',
       pendingChanges: '++id, table, recordId, operation, createdAt',
+    });
+
+    this.version(2).stores({
+      itemExamples:
+        'id, userId, itemId, example, exampleReading, sortOrder, updatedAt, deletedAt, [itemId+example], [userId+itemId]',
+    });
+
+    this.version(DB_SCHEMA_VERSION).stores({
+      itemExamples:
+        'id, userId, itemId, example, exampleReading, sortOrder, updatedAt, deletedAt, [itemId+example+exampleReading], [userId+itemId]',
     });
   }
 }

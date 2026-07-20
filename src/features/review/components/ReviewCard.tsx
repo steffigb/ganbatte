@@ -1,5 +1,7 @@
 import type { LearningItem } from '@/types/learningItem';
 import { cn } from '@/utils/cn';
+import { formatItemMeaning } from '@/utils/meaningText';
+import { ItemExamplesList } from '@/features/items/components/ItemExamplesList';
 import { KanjiFrontReading, KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
 
 type ReviewCardProps = {
@@ -45,19 +47,15 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
         </div>
       ) : (
         <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-          <p className="text-lg font-medium text-slate-900 dark:text-slate-100">{item.meaning}</p>
-          {item.meaningAlt ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">{item.meaningAlt}</p>
-          ) : null}
+          <p className="text-lg font-medium text-slate-900 dark:text-slate-100">
+            {formatItemMeaning(item.meaning, item.meaningAlt)}
+          </p>
           {item.type === 'kanji' ? <KanjiReadingsBlock item={item} /> : null}
-          {item.example ? (
-            <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
-              <p className="text-slate-900 dark:text-slate-100">{item.example}</p>
-              {item.exampleReading ? (
-                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
-              ) : null}
-            </div>
-          ) : null}
+          <ItemExamplesList
+            itemId={item.id}
+            fallbackExample={item.example}
+            fallbackExampleReading={item.exampleReading}
+          />
           {item.notes ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">{item.notes}</p>
           ) : null}

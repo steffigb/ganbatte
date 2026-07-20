@@ -1,4 +1,4 @@
 type,level,skill,topics,japanese,reading,onyomi,kunyomi,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
 kanji,N5,kanji,direction,右,みぎ,ウ、ユウ,みぎ,right,右手,みぎて,right hand,,,kanji;n5,
-kanji,N5,kanji,time,先,さき,セン,さき,previous; ahead,先生,せんせい,teacher,,,kanji;n5,On'yomi common in compounds like 先生
-kanji,N4,kanji,daily-life,食,た(べる),ショク,た(べる),eat; food,食事,しょくじ,meal,,,,
+kanji,N5,kanji,time,先,さき,セン,さき,previous · ahead,先生,せんせい,teacher,,,kanji;n5,On'yomi common in compounds like 先生
+kanji,N4,kanji,daily-life,食,た(べる),ショク,た(べる),eat · food,食事,しょくじ,meal,,,,

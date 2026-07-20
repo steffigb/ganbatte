@@ -17,6 +17,7 @@ import type { LearningItem } from '@/types/learningItem';
 import { nowIso } from '@/utils/date';
 import { createId } from '@/utils/id';
 import { skillForItemType } from '@/utils/itemHelpers';
+import { normalizeMeaningText, formatItemMeaning } from '@/utils/meaningText';
 import {
   kanjiReadingFieldToStored,
   validateKanjiReadingFields,
@@ -48,7 +49,7 @@ export async function loadItemFormValues(
     level: item.level,
     japanese: item.japanese,
     reading: item.reading,
-    meaning: item.meaning,
+    meaning: formatItemMeaning(item.meaning, item.meaningAlt),
     notes: item.notes,
     topicIds: topicLinks.map((link) => link.topicId),
     sourceIds: sourceLinks.map((link) => link.sourceId),
@@ -140,7 +141,7 @@ export async function saveItemWithRelations(
   values: ItemFormValues,
 ): Promise<string> {
   const japanese = values.japanese.trim();
-  const meaning = values.meaning.trim();
+  const meaning = normalizeMeaningText(values.meaning.trim());
 
   if (!japanese || !meaning) {
     throw new Error('Japanese and meaning are required');
@@ -163,6 +164,7 @@ export async function saveItemWithRelations(
     skill: skillForItemType(values.type),
     japanese,
     meaning,
+    meaningAlt: undefined,
     notes: values.notes?.trim() || undefined,
     tags: existing?.tags ?? [],
     isCustom: true,

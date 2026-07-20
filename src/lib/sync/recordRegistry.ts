@@ -1,6 +1,7 @@
 import { db } from '@/lib/db/database';
 import type { AppSettings } from '@/types/appSettings';
 import type { ImportBatch } from '@/types/importBatch';
+import type { ItemExample } from '@/types/itemExample';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
 import type { Review } from '@/types/review';
@@ -18,6 +19,8 @@ import {
   itemSourceToRemote,
   itemTopicFromRemote,
   itemTopicToRemote,
+  itemExampleFromRemote,
+  itemExampleToRemote,
   learningItemFromRemote,
   learningItemToRemote,
   reviewFromRemote,
@@ -38,6 +41,7 @@ export type SyncRecord =
   | LearningItem
   | ItemSource
   | ItemTopic
+  | ItemExample
   | Review
   | UserProgress
   | StudySession
@@ -99,6 +103,15 @@ export const TABLE_ADAPTERS: Record<SyncTableName, TableAdapter> = {
     deleteLocal: (id) => db.itemTopics.delete(id),
     fromRemote: itemTopicFromRemote,
     toRemote: (record) => itemTopicToRemote(record as ItemTopic),
+  },
+  itemExamples: {
+    getLocal: (id) => db.itemExamples.get(id),
+    putLocal: async (record) => {
+      await db.itemExamples.put(record as ItemExample);
+    },
+    deleteLocal: (id) => db.itemExamples.delete(id),
+    fromRemote: itemExampleFromRemote,
+    toRemote: (record) => itemExampleToRemote(record as ItemExample),
   },
   reviews: {
     getLocal: (id) => db.reviews.get(id),

@@ -15,6 +15,7 @@ export * from '@/lib/db/repositories/sourceRepository';
 export * from '@/lib/db/repositories/itemRepository';
 export * from '@/lib/db/repositories/itemSourceRepository';
 export * from '@/lib/db/repositories/itemTopicRepository';
+export * from '@/lib/db/repositories/itemExampleRepository';
 export * from '@/lib/db/repositories/reviewRepository';
 export * from '@/lib/db/repositories/userProgressRepository';
 export * from '@/lib/db/repositories/studySessionRepository';
