@@ -175,17 +175,13 @@ export async function saveItemWithRelations(
   let item: LearningItem;
 
   if (values.type === 'kanji') {
-    const standaloneKun = values.standaloneKun ?? createBlankKanjiReadingFields().standaloneKun!;
     const onyomiField = values.onyomi ?? createBlankKanjiReadingFields().onyomi!;
     const kunyomiField = values.kunyomi ?? createBlankKanjiReadingFields().kunyomi!;
 
-    const standalone = kanjiReadingFieldToStored(standaloneKun);
     const onyomi = kanjiReadingFieldToStored(onyomiField);
     const kunyomi = kanjiReadingFieldToStored(kunyomiField);
 
     validateKanjiReadingFields({
-      reading: standalone.value,
-      readingStatus: standalone.status,
       onyomi: onyomi.value,
       onyomiStatus: onyomi.status,
       kunyomi: kunyomi.value,
@@ -194,8 +190,7 @@ export async function saveItemWithRelations(
 
     item = {
       ...baseItem,
-      reading: standalone.value,
-      readingStatus: standalone.status,
+      reading: undefined,
       onyomi: onyomi.value,
       onyomiStatus: onyomi.status,
       kunyomi: kunyomi.value,

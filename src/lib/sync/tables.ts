@@ -5,7 +5,6 @@ export const SYNC_TABLE_ORDER: SyncTableName[] = [
   'topics',
   'sources',
   'learningItems',
-  'itemExamples',
   'itemSources',
   'itemTopics',
   'reviews',
@@ -20,7 +19,6 @@ export const REMOTE_TABLE_NAMES: Record<SyncTableName, string> = {
   learningItems: 'learning_items',
   itemSources: 'item_sources',
   itemTopics: 'item_topics',
-  itemExamples: 'item_examples',
   reviews: 'reviews',
   userProgress: 'user_progress',
   studySessions: 'study_sessions',
@@ -31,7 +29,6 @@ export const REMOTE_TABLE_NAMES: Record<SyncTableName, string> = {
 export const SOFT_DELETE_TABLES = new Set<SyncTableName>([
   'topics',
   'learningItems',
-  'itemExamples',
 ]);
 
 export const APPEND_ONLY_TABLES = new Set<SyncTableName>(['reviews']);

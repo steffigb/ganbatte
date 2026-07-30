@@ -15,7 +15,6 @@ export interface LearningItem extends Timestamps, SoftDeletable, UserOwned {
   skill: Skill;
   japanese: string;
   reading?: string;
-  readingStatus?: ReadingStatus;
   meaning: string;
   meaningAlt?: string;
   example?: string;

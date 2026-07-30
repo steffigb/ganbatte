@@ -19,8 +19,6 @@ const HEADER_ALIASES: Record<string, ImportFieldKey> = {
   example: 'example',
   example_reading: 'example_reading',
   examplereading: 'example_reading',
-  example_meaning: 'example_meaning',
-  examplemeaning: 'example_meaning',
   source: 'source',
   source_ref: 'source_ref',
   sourceref: 'source_ref',

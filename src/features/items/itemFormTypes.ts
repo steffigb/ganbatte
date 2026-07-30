@@ -14,7 +14,6 @@ export type ItemFormValues = {
   sourceIds: string[];
   sourceReferences: Record<string, string>;
   /** Kanji-only reading fields (tri-state). */
-  standaloneKun?: KanjiReadingFieldInput;
   onyomi?: KanjiReadingFieldInput;
   kunyomi?: KanjiReadingFieldInput;
 };
@@ -30,25 +29,21 @@ function defaultKanjiReadingField(): KanjiReadingFieldInput {
 
 export function createBlankKanjiReadingFields(): Pick<
   ItemFormValues,
-  'standaloneKun' | 'onyomi' | 'kunyomi'
+  'onyomi' | 'kunyomi'
 > {
   return {
-    standaloneKun: defaultKanjiReadingField(),
     onyomi: defaultKanjiReadingField(),
     kunyomi: defaultKanjiReadingField(),
   };
 }
 
 export function kanjiReadingFieldsFromItem(item: {
-  reading?: string;
-  readingStatus?: ReadingStatus;
   onyomi?: string;
   onyomiStatus?: ReadingStatus;
   kunyomi?: string;
   kunyomiStatus?: ReadingStatus;
-}): Pick<ItemFormValues, 'standaloneKun' | 'onyomi' | 'kunyomi'> {
+}): Pick<ItemFormValues, 'onyomi' | 'kunyomi'> {
   return {
-    standaloneKun: kanjiReadingFieldFromItem(item.reading, item.readingStatus),
     onyomi: kanjiReadingFieldFromItem(item.onyomi, item.onyomiStatus),
     kunyomi: kanjiReadingFieldFromItem(item.kunyomi, item.kunyomiStatus),
   };

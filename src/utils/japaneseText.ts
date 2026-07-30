@@ -1,5 +1,17 @@
 const KATAKANA_HIRAGANA_OFFSET = 0x60;
 
+// CJK Unified Ideographs (+ Extension A) — excludes hiragana/katakana/punctuation.
+const KANJI_CHAR_PATTERN = /[\u4e00-\u9fff\u3400-\u4dbf]/g;
+
+export function extractKanjiCharacters(text: string): string[] {
+  const matches = text.match(KANJI_CHAR_PATTERN);
+  if (!matches) {
+    return [];
+  }
+
+  return [...new Set(matches)];
+}
+
 export function readingToHiragana(text: string): string {
   return text
     .normalize('NFKC')

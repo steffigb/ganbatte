@@ -1,4 +1,4 @@
-type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
-word,N4,vocabulary,"transport,verbs",電車,でんしゃ,Zug,電車に乗ります,でんしゃにのります,Ich nehme den Zug.,Try! N4,Unit 3,n4-core,
-word,N4,vocabulary,daily-life,食べる,たべる,essen,ご飯を食べます,ごはんをたべます,Ich esse Reis.,Genki I,Lektion 3,,
-word,N5,vocabulary,greetings,こんにちは,こんにちは,Hallo,こんにちは、元気ですか。,こんにちは、げんきですか。,Hallo, wie geht es dir?,,,
+type,level,skill,topics,japanese,reading,meaning,example,example_reading,source,source_ref,tags,notes
+word,N4,vocabulary,"transport,verbs",電車,でんしゃ,Zug,電車に乗ります,でんしゃにのります,Try! N4,Unit 3,n4-core,
+word,N4,vocabulary,daily-life,食べる,たべる,essen,ご飯を食べます,ごはんをたべます,Genki I,Lektion 3,,
+word,N5,vocabulary,greetings,こんにちは,こんにちは,Hallo,こんにちは、元気ですか。,こんにちは、げんきですか。,,,,

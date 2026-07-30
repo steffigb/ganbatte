@@ -128,14 +128,11 @@ export function validateKanjiReadingField(
 }
 
 export function validateKanjiReadingFields(fields: {
-  reading?: string;
-  readingStatus: ReadingStatus;
   onyomi?: string;
   onyomiStatus: ReadingStatus;
   kunyomi?: string;
   kunyomiStatus: ReadingStatus;
 }): void {
-  validateKanjiReadingField('Kun (standalone)', fields.readingStatus, fields.reading);
   validateKanjiReadingField("On'yomi", fields.onyomiStatus, fields.onyomi);
   validateKanjiReadingField("Kun'yomi", fields.kunyomiStatus, fields.kunyomi);
 }

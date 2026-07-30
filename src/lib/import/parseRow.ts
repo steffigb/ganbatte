@@ -9,7 +9,6 @@ import {
 } from '@/lib/import/normalizeField';
 import type { ImportFieldKey, ParsedImportRow } from '@/lib/import/types';
 import { parseImportReadingCell } from '@/utils/kanjiReading';
-import { normalizeMeaningText } from '@/utils/meaningText';
 
 export type ParseRowResult =
   | { ok: true; data: ParsedImportRow }
@@ -60,10 +59,6 @@ export function parseImportRow(
     meaningAlt: meaningFields.meaningAlt,
     example: getCellValue(raw, columnMap, 'example'),
     exampleReading: getCellValue(raw, columnMap, 'example_reading'),
-    exampleMeaning: (() => {
-      const value = getCellValue(raw, columnMap, 'example_meaning');
-      return value ? normalizeMeaningText(value) : undefined;
-    })(),
     notes: getCellValue(raw, columnMap, 'notes'),
     topicNames: parseTopicNames(getCellValue(raw, columnMap, 'topics')),
     tags: parseTags(getCellValue(raw, columnMap, 'tags')),
@@ -72,7 +67,6 @@ export function parseImportRow(
   };
 
   if (type === 'kanji') {
-    const standalone = parseImportReadingCell(getCellValue(raw, columnMap, 'reading'));
     const onyomi = parseImportReadingCell(getCellValue(raw, columnMap, 'onyomi'));
     const kunyomi = parseImportReadingCell(getCellValue(raw, columnMap, 'kunyomi'));
 
@@ -80,8 +74,6 @@ export function parseImportRow(
       ok: true,
       data: {
         ...base,
-        reading: standalone.value,
-        readingStatus: standalone.status,
         onyomi: onyomi.value,
         onyomiStatus: onyomi.status,
         kunyomi: kunyomi.value,

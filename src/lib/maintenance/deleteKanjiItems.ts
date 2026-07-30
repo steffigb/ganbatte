@@ -1,12 +1,10 @@
 import {
   deleteImportBatch,
-  deleteItemExample,
   deleteItemSource,
   deleteItemTopic,
   deleteReview,
   getUserProgressByItem,
   listImportBatchesByUser,
-  listItemExamplesByItem,
   listItemSourcesByItem,
   listItemTopicsByItem,
   listItemTopicsByTopic,
@@ -34,11 +32,10 @@ export async function countTopics(userId: string): Promise<number> {
 }
 
 async function deleteKanjiRelatedRecords(itemId: string, userId: string): Promise<void> {
-  const [reviews, topicLinks, sourceLinks, examples, progress] = await Promise.all([
+  const [reviews, topicLinks, sourceLinks, progress] = await Promise.all([
     listReviewsByItem(itemId),
     listItemTopicsByItem(itemId),
     listItemSourcesByItem(itemId),
-    listItemExamplesByItem(itemId),
     getUserProgressByItem(userId, itemId),
   ]);
 
@@ -56,10 +53,6 @@ async function deleteKanjiRelatedRecords(itemId: string, userId: string): Promis
 
   for (const link of sourceLinks) {
     await deleteItemSource(link.id);
-  }
-
-  for (const example of examples) {
-    await deleteItemExample(example.id);
   }
 }
 

@@ -7,7 +7,6 @@ type ImportPreviewTableProps = {
   stats: {
     total: number;
     valid: number;
-    examples: number;
     invalid: number;
     duplicate: number;
   };
@@ -16,10 +15,6 @@ type ImportPreviewTableProps = {
 function statusLabel(row: ImportPreviewRow): string {
   if (row.status === 'invalid') {
     return 'Invalid';
-  }
-
-  if (row.status === 'example') {
-    return 'Example';
   }
 
   if (row.status === 'duplicate') {
@@ -44,10 +39,6 @@ function statusClass(row: ImportPreviewRow): string {
     return 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200';
   }
 
-  if (row.status === 'example') {
-    return 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200';
-  }
-
   return 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300';
 }
 
@@ -57,7 +48,6 @@ export function ImportPreviewTable({ rows, stats }: ImportPreviewTableProps) {
       <div className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
         <span>{stats.total} rows</span>
         <span>{stats.valid} new items</span>
-        <span>{stats.examples} examples</span>
         <span>{stats.duplicate} skipped</span>
         <span>{stats.invalid} invalid</span>
       </div>

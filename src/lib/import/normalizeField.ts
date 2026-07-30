@@ -88,24 +88,6 @@ export function parseMeaningFields(
   };
 }
 
-export function combineNotes(
-  notes: string | undefined,
-  exampleMeaning: string | undefined,
-): string | undefined {
-  const trimmedNotes = notes?.trim();
-  const trimmedExampleMeaning = exampleMeaning?.trim();
-
-  if (trimmedNotes && trimmedExampleMeaning) {
-    return `${trimmedNotes}\nExample meaning: ${trimmedExampleMeaning}`;
-  }
-
-  if (trimmedExampleMeaning) {
-    return `Example meaning: ${trimmedExampleMeaning}`;
-  }
-
-  return trimmedNotes || undefined;
-}
-
 export function itemTypeFromSkill(skill: Skill): ItemType {
   return defaultItemTypeForSkill(skill);
 }

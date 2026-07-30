@@ -16,7 +16,7 @@ export function ImportResultView({ result, onStartOver }: ImportResultViewProps)
     <div className="space-y-4">
       <FormAlert
         variant="success"
-        message={`Import complete — ${result.importedCount} items, ${result.examplesCount} examples, ${result.updatedCount} updated, ${result.attachedCount} attached, ${result.skippedCount} skipped.`}
+        message={`Import complete — ${result.importedCount} items, ${result.updatedCount} updated, ${result.attachedCount} attached, ${result.skippedCount} skipped.`}
       />
 
       {hasErrors ? (

@@ -1,22 +1,16 @@
 import {
   findItemByJapanese,
-  findItemExampleByContent,
   findItemSourceLink,
   findItemTopicLink,
   listTopicsBySkill,
   upsertImportBatch,
   upsertItem,
-  upsertItemExample,
   upsertItemSource,
   upsertItemTopic,
   findSourceByLabel,
   upsertSource,
   upsertTopic,
 } from '@/lib/db';
-import {
-  hasImportExample,
-  shouldStoreExamplesOnItem,
-} from '@/lib/import/exampleHelpers';
 import { itemDuplicateKey } from '@/lib/import/parseRow';
 import type {
   ImportOptions,
@@ -202,7 +196,6 @@ function buildLearningItem(
 ): LearningItem {
   const timestamp = nowIso();
   const id = existing?.id ?? createId();
-  const storeExampleOnItem = shouldStoreExamplesOnItem(row.type);
 
   const base: LearningItem = {
     id,
@@ -213,8 +206,8 @@ function buildLearningItem(
     japanese: row.japanese,
     meaning: row.meaning,
     meaningAlt: row.meaningAlt,
-    example: storeExampleOnItem ? row.example : undefined,
-    exampleReading: storeExampleOnItem ? row.exampleReading : undefined,
+    example: row.example,
+    exampleReading: row.exampleReading,
     notes: row.notes,
     tags: existing ? mergeTags(existing.tags, row.tags) : row.tags,
     isCustom: true,
@@ -226,8 +219,7 @@ function buildLearningItem(
   if (row.type === 'kanji') {
     return {
       ...base,
-      reading: row.reading,
-      readingStatus: row.readingStatus,
+      reading: undefined,
       onyomi: row.onyomi,
       onyomiStatus: row.onyomiStatus,
       kunyomi: row.kunyomi,
@@ -239,38 +231,6 @@ function buildLearningItem(
     ...base,
     reading: row.reading,
   };
-}
-
-async function upsertExampleFromRow(
-  userId: string,
-  itemId: string,
-  row: ParsedImportRow,
-  sortOrder: number,
-): Promise<boolean> {
-  const example = row.example?.trim();
-  if (!example) {
-    return false;
-  }
-
-  const existing = await findItemExampleByContent(itemId, example, row.exampleReading);
-  if (existing) {
-    return false;
-  }
-
-  const timestamp = nowIso();
-  await upsertItemExample({
-    id: createId(),
-    userId,
-    itemId,
-    example,
-    exampleReading: row.exampleReading,
-    exampleMeaning: row.exampleMeaning,
-    sortOrder,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  });
-
-  return true;
 }
 
 async function createItemFromRow(
@@ -308,26 +268,6 @@ async function updateItemFromRow(
   return item.id;
 }
 
-async function resolveItemId(
-  userId: string,
-  row: ParsedImportRow,
-  itemIdByKey: Map<string, string>,
-): Promise<string | undefined> {
-  const key = itemDuplicateKey(row.type, row.japanese);
-  const cached = itemIdByKey.get(key);
-  if (cached) {
-    return cached;
-  }
-
-  const existing = await findItemByJapanese(userId, row.type, row.japanese);
-  if (existing) {
-    itemIdByKey.set(key, existing.id);
-    return existing.id;
-  }
-
-  return undefined;
-}
-
 export async function executeImport(
   userId: string,
   preview: ImportPreview,
@@ -338,7 +278,6 @@ export async function executeImport(
   const importedAt = nowIso();
   const errors: ImportError[] = [];
   let importedCount = 0;
-  let examplesCount = 0;
   let attachedCount = 0;
   let updatedCount = 0;
   let skippedCount = 0;
@@ -346,13 +285,6 @@ export async function executeImport(
   const topicCache = new Map<string, string>();
   const sourceCache = new Map<string, string>();
   const itemIdByKey = new Map<string, string>();
-  const exampleSortByItem = new Map<string, number>();
-
-  const nextExampleSortOrder = (itemId: string): number => {
-    const next = exampleSortByItem.get(itemId) ?? 0;
-    exampleSortByItem.set(itemId, next + 1);
-    return next;
-  };
 
   for (const previewRow of preview.rows) {
     if (previewRow.status === 'invalid') {
@@ -364,7 +296,7 @@ export async function executeImport(
       continue;
     }
 
-    if (previewRow.status === 'duplicate') {
+    if (previewRow.status === 'duplicate' && options.duplicateAction === 'skip') {
       skippedCount += 1;
       continue;
     }
@@ -381,93 +313,40 @@ export async function executeImport(
     const row = previewRow.data;
 
     try {
-      if (previewRow.status === 'valid') {
-        const existing = await findItemByJapanese(userId, row.type, row.japanese);
+      const existing = await findItemByJapanese(userId, row.type, row.japanese);
 
-        if (existing) {
-          if (options.duplicateAction === 'skip') {
-            skippedCount += 1;
-            continue;
-          }
-
-          if (options.duplicateAction === 'update') {
-            await updateItemFromRow(
-              userId,
-              row,
-              batchId,
-              existing,
-              options,
-              topicCache,
-              sourceCache,
-              itemIdByKey,
-            );
-            updatedCount += 1;
-          } else {
-            itemIdByKey.set(itemDuplicateKey(row.type, row.japanese), existing.id);
-            await linkTopics(userId, existing.id, row, options, topicCache);
-            const attached = await attachSource(userId, existing.id, row, options, sourceCache);
-            if (attached || row.topicNames.length > 0) {
-              attachedCount += 1;
-            }
-          }
-        } else {
-          await createItemFromRow(
+      if (existing) {
+        if (options.duplicateAction === 'update') {
+          await updateItemFromRow(
             userId,
             row,
             batchId,
+            existing,
             options,
             topicCache,
             sourceCache,
             itemIdByKey,
           );
-          importedCount += 1;
-        }
-
-        const itemId = await resolveItemId(userId, row, itemIdByKey);
-        if (itemId && hasImportExample(row)) {
-          const created = await upsertExampleFromRow(
-            userId,
-            itemId,
-            row,
-            nextExampleSortOrder(itemId),
-          );
-          if (created) {
-            examplesCount += 1;
-          }
-        }
-
-        continue;
-      }
-
-      if (previewRow.status === 'example') {
-        const itemId = await resolveItemId(userId, row, itemIdByKey);
-        if (!itemId) {
-          skippedCount += 1;
-          errors.push({
-            row: previewRow.rowNumber,
-            message: 'Example row has no matching item to attach to',
-          });
-          continue;
-        }
-
-        await linkTopics(userId, itemId, row, options, topicCache);
-        await attachSource(userId, itemId, row, options, sourceCache);
-
-        if (hasImportExample(row)) {
-          const created = await upsertExampleFromRow(
-            userId,
-            itemId,
-            row,
-            nextExampleSortOrder(itemId),
-          );
-          if (created) {
-            examplesCount += 1;
-          } else {
-            skippedCount += 1;
-          }
+          updatedCount += 1;
         } else {
-          skippedCount += 1;
+          itemIdByKey.set(itemDuplicateKey(row.type, row.japanese), existing.id);
+          await linkTopics(userId, existing.id, row, options, topicCache);
+          const attached = await attachSource(userId, existing.id, row, options, sourceCache);
+          if (attached || row.topicNames.length > 0) {
+            attachedCount += 1;
+          }
         }
+      } else {
+        await createItemFromRow(
+          userId,
+          row,
+          batchId,
+          options,
+          topicCache,
+          sourceCache,
+          itemIdByKey,
+        );
+        importedCount += 1;
       }
     } catch (cause) {
       skippedCount += 1;
@@ -485,7 +364,7 @@ export async function executeImport(
     userId,
     filename,
     importedAt,
-    itemCount: importedCount + updatedCount + examplesCount,
+    itemCount: importedCount + updatedCount,
     skippedCount,
     errorCount,
     errors: errorCount > 0 ? errors : undefined,
@@ -496,7 +375,6 @@ export async function executeImport(
   return {
     batchId,
     importedCount,
-    examplesCount,
     attachedCount,
     updatedCount,
     skippedCount,

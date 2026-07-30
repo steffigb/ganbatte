@@ -2,7 +2,6 @@ import Dexie, { type EntityTable } from 'dexie';
 
 import type { AppSettings } from '@/types/appSettings';
 import type { ImportBatch } from '@/types/importBatch';
-import type { ItemExample } from '@/types/itemExample';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
 import type { Review } from '@/types/review';
@@ -20,7 +19,6 @@ export class GanbatteDB extends Dexie {
   learningItems!: EntityTable<LearningItem, 'id'>;
   itemSources!: EntityTable<ItemSource, 'id'>;
   itemTopics!: EntityTable<ItemTopic, 'id'>;
-  itemExamples!: EntityTable<ItemExample, 'id'>;
   reviews!: EntityTable<Review, 'id'>;
   userProgress!: EntityTable<UserProgress, 'id'>;
   studySessions!: EntityTable<StudySession, 'id'>;
@@ -55,9 +53,16 @@ export class GanbatteDB extends Dexie {
         'id, userId, itemId, example, exampleReading, sortOrder, updatedAt, deletedAt, [itemId+example], [userId+itemId]',
     });
 
-    this.version(DB_SCHEMA_VERSION).stores({
+    this.version(3).stores({
       itemExamples:
         'id, userId, itemId, example, exampleReading, sortOrder, updatedAt, deletedAt, [itemId+example+exampleReading], [userId+itemId]',
+    });
+
+    // v4 — compounds are plain vocabulary LearningItems now; the
+    // kanji <-> compound relationship is derived live by text search
+    // instead of being stored, so the child table is dropped.
+    this.version(DB_SCHEMA_VERSION).stores({
+      itemExamples: null,
     });
   }
 }

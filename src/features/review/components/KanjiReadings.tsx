@@ -30,17 +30,11 @@ function KanjiReadingLine({ label, display, unset }: KanjiReadingLineProps) {
 }
 
 export function KanjiReadingsBlock({ item }: { item: LearningItem }) {
-  const standaloneDisplay = formatKunyomiDisplay(item.readingStatus, item.reading);
   const onyomiDisplay = formatOnyomiDisplay(item.onyomiStatus, item.onyomi);
   const kunyomiDisplay = formatKunyomiDisplay(item.kunyomiStatus, item.kunyomi);
 
   return (
     <div className="space-y-1">
-      <KanjiReadingLine
-        label="Kun (standalone)"
-        display={standaloneDisplay}
-        unset={isReadingUnset(item.readingStatus, item.reading)}
-      />
       <KanjiReadingLine
         label="On"
         display={onyomiDisplay}
@@ -52,21 +46,5 @@ export function KanjiReadingsBlock({ item }: { item: LearningItem }) {
         unset={isReadingUnset(item.kunyomiStatus, item.kunyomi)}
       />
     </div>
-  );
-}
-
-export function KanjiFrontReading({ item }: { item: LearningItem }) {
-  const display = formatKunyomiDisplay(item.readingStatus, item.reading);
-  const unset = isReadingUnset(item.readingStatus, item.reading);
-
-  return (
-    <p
-      className={cn(
-        'text-lg text-slate-500 dark:text-slate-400',
-        unset && 'italic text-amber-700 dark:text-amber-300',
-      )}
-    >
-      {display}
-    </p>
   );
 }

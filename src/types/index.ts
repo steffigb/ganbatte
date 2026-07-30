@@ -12,7 +12,6 @@ export type { Topic } from '@/types/topic';
 export type { TopicProgress } from '@/types/topicProgress';
 export type { Source, SourceType } from '@/types/source';
 export type { LearningItem, Question } from '@/types/learningItem';
-export type { ItemExample } from '@/types/itemExample';
 export type { ItemSource, ItemTopic } from '@/types/itemRelations';
 export type { Review, ReviewGrade } from '@/types/review';
 export type { UserProgress } from '@/types/userProgress';

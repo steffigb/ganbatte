@@ -14,7 +14,6 @@ export type ImportFieldKey =
   | 'german'
   | 'example'
   | 'example_reading'
-  | 'example_meaning'
   | 'source'
   | 'source_ref'
   | 'tags'
@@ -43,14 +42,12 @@ export type ParsedImportRow = {
   meaning: string;
   meaningAlt?: string;
   reading?: string;
-  readingStatus?: ReadingStatus;
   onyomi?: string;
   onyomiStatus?: ReadingStatus;
   kunyomi?: string;
   kunyomiStatus?: ReadingStatus;
   example?: string;
   exampleReading?: string;
-  exampleMeaning?: string;
   notes?: string;
   topicNames: string[];
   tags: string[];
@@ -58,7 +55,7 @@ export type ParsedImportRow = {
   sourceRef?: string;
 };
 
-export type PreviewRowStatus = 'valid' | 'example' | 'invalid' | 'duplicate';
+export type PreviewRowStatus = 'valid' | 'invalid' | 'duplicate';
 
 export type ImportPreviewRow = {
   rowNumber: number;
@@ -77,7 +74,6 @@ export type ImportPreview = {
   stats: {
     total: number;
     valid: number;
-    examples: number;
     invalid: number;
     duplicate: number;
   };
@@ -86,7 +82,6 @@ export type ImportPreview = {
 export type ImportResult = {
   batchId: string;
   importedCount: number;
-  examplesCount: number;
   attachedCount: number;
   updatedCount: number;
   skippedCount: number;

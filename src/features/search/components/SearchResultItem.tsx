@@ -66,14 +66,15 @@ export function SearchResultItem({ result }: SearchResultItemProps) {
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <div className="min-w-0">
-            <p
+            <Link
+              to={routes.itemDetail(item.id)}
               className={cn(
-                'font-medium text-slate-900 dark:text-slate-100',
+                'block font-medium text-slate-900 hover:underline dark:text-slate-100',
                 item.type === 'kanji' ? 'text-4xl leading-none' : 'text-base',
               )}
             >
               {item.japanese}
-            </p>
+            </Link>
             {item.reading ? (
               <p className="text-slate-500 dark:text-slate-400">{item.reading}</p>
             ) : null}

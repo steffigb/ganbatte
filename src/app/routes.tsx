@@ -16,6 +16,9 @@ const LearnBrowsePage = lazy(() =>
 const TopicsPage = lazy(() =>
   import('@/pages/TopicsPage').then((m) => ({ default: m.TopicsPage })),
 );
+const ItemDetailPage = lazy(() =>
+  import('@/pages/ItemDetailPage').then((m) => ({ default: m.ItemDetailPage })),
+);
 const AddItemPage = lazy(() =>
   import('@/pages/AddItemPage').then((m) => ({ default: m.AddItemPage })),
 );
@@ -46,6 +49,7 @@ export function AppRouter() {
           <Route path="study" element={<LazyPage><StudyTodayPage /></LazyPage>} />
           <Route path="learn/:skill" element={<LazyPage><LearnBrowsePage /></LazyPage>} />
           <Route path="topics" element={<LazyPage><TopicsPage /></LazyPage>} />
+          <Route path="items/:id" element={<LazyPage><ItemDetailPage /></LazyPage>} />
           <Route path="add" element={<LazyPage><AddItemPage /></LazyPage>} />
           <Route path="import" element={<LazyPage><BulkImportPage /></LazyPage>} />
           <Route path="search" element={<LazyPage><SearchPage /></LazyPage>} />

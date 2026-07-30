@@ -57,9 +57,6 @@ function ItemFormFields({
   const [sourceReferences, setSourceReferences] = useState<Record<string, string>>(
     initialValues.sourceReferences,
   );
-  const [standaloneKun, setStandaloneKun] = useState<KanjiReadingFieldInput>(
-    initialValues.standaloneKun ?? createBlankKanjiReadingFields().standaloneKun!,
-  );
   const [onyomiField, setOnyomiField] = useState<KanjiReadingFieldInput>(
     initialValues.onyomi ?? createBlankKanjiReadingFields().onyomi!,
   );
@@ -70,7 +67,6 @@ function ItemFormFields({
   function handleTypeChange(nextType: ItemType) {
     if (nextType === 'kanji' && type !== 'kanji') {
       const blanks = createBlankKanjiReadingFields();
-      setStandaloneKun(blanks.standaloneKun!);
       setOnyomiField(blanks.onyomi!);
       setKunyomiField(blanks.kunyomi!);
     }
@@ -123,7 +119,6 @@ function ItemFormFields({
       sourceReferences,
       ...(type === 'kanji'
         ? {
-            standaloneKun,
             onyomi: onyomiField,
             kunyomi: kunyomiField,
           }
@@ -162,14 +157,6 @@ function ItemFormFields({
       {type === 'kanji' ? (
         <div className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Readings</p>
-          <KanjiReadingField
-            id="kanji-standalone-kun"
-            label="Kun (standalone — when the kanji is a word on its own)"
-            noneLabel="No standalone kun reading"
-            placeholder="e.g. みぎ"
-            field={standaloneKun}
-            onChange={setStandaloneKun}
-          />
           <KanjiReadingField
             id="kanji-onyomi"
             label="On'yomi"

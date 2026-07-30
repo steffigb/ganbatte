@@ -120,14 +120,15 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
           )}
         >
           <div className="min-w-0 space-y-1">
-            <p
+            <Link
+              to={routes.itemDetail(item.id)}
               className={cn(
-                'font-medium text-slate-900 dark:text-slate-100',
+                'block font-medium text-slate-900 hover:underline dark:text-slate-100',
                 item.type === 'kanji' ? 'text-4xl leading-none' : 'text-base',
               )}
             >
               {item.japanese}
-            </p>
+            </Link>
             {item.reading ? (
               <p className="text-slate-500 dark:text-slate-400">{item.reading}</p>
             ) : null}

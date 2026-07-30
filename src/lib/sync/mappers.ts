@@ -1,7 +1,5 @@
 import type { AppSettings } from '@/types/appSettings';
 import type { ImportBatch } from '@/types/importBatch';
-import type { ItemExample } from '@/types/itemExample';
-import { exampleReadingKey } from '@/utils/exampleReading';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
 import { readingStatusFromRemote } from '@/utils/kanjiReading';
@@ -78,7 +76,6 @@ export function sourceToRemote(source: Source): RemoteRow {
 }
 
 export function learningItemFromRemote(row: RemoteRow): LearningItem {
-  const reading = optionalString(row.reading);
   const onyomi = optionalString(row.onyomi);
   const kunyomi = optionalString(row.kunyomi);
 
@@ -89,8 +86,7 @@ export function learningItemFromRemote(row: RemoteRow): LearningItem {
     level: row.level as LearningItem['level'],
     skill: row.skill as LearningItem['skill'],
     japanese: String(row.japanese),
-    reading,
-    readingStatus: readingStatusFromRemote(row.reading_status, reading),
+    reading: optionalString(row.reading),
     meaning: String(row.meaning),
     meaningAlt: optionalString(row.meaning_alt),
     example: optionalString(row.example),
@@ -123,7 +119,6 @@ export function learningItemToRemote(item: LearningItem): RemoteRow {
     skill: item.skill,
     japanese: item.japanese,
     reading: item.reading ?? null,
-    reading_status: item.readingStatus ?? 'unset',
     meaning: item.meaning,
     meaning_alt: item.meaningAlt ?? null,
     example: item.example ?? null,
@@ -192,38 +187,6 @@ export function itemTopicToRemote(link: ItemTopic): RemoteRow {
     topic_id: link.topicId,
     created_at: link.createdAt,
     updated_at: link.updatedAt,
-  };
-}
-
-export function itemExampleFromRemote(row: RemoteRow): ItemExample {
-  return {
-    id: String(row.id),
-    userId: String(row.user_id),
-    itemId: String(row.item_id),
-    example: String(row.example),
-    exampleReading: exampleReadingKey(optionalString(row.example_reading)),
-    exampleMeaning: optionalString(row.example_meaning),
-    sortOrder: optionalNumber(row.sort_order) ?? 0,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at),
-    deletedAt: optionalString(row.deleted_at),
-  };
-}
-
-export function itemExampleToRemote(example: ItemExample): RemoteRow {
-  const reading = exampleReadingKey(example.exampleReading);
-
-  return {
-    id: example.id,
-    user_id: example.userId,
-    item_id: example.itemId,
-    example: example.example,
-    example_reading: reading || null,
-    example_meaning: example.exampleMeaning ?? null,
-    sort_order: example.sortOrder,
-    created_at: example.createdAt,
-    updated_at: example.updatedAt,
-    deleted_at: example.deletedAt ?? null,
   };
 }
 

@@ -1,8 +1,9 @@
 import type { LearningItem } from '@/types/learningItem';
 import { cn } from '@/utils/cn';
 import { formatItemMeaning } from '@/utils/meaningText';
-import { ItemExamplesList } from '@/features/items/components/ItemExamplesList';
-import { KanjiFrontReading, KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
+import { useAuth } from '@/features/auth';
+import { KanjiCompoundsList } from '@/features/items/components/KanjiCompoundsList';
+import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
 
 type ReviewCardProps = {
   item: LearningItem;
@@ -18,16 +19,31 @@ function ItemMeta({ item }: { item: LearningItem }) {
   );
 }
 
+function ExampleSentence({ item }: { item: LearningItem }) {
+  if (!item.example) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
+      <p className="text-slate-900 dark:text-slate-100">{item.example}</p>
+      {item.exampleReading ? (
+        <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
+  const { user } = useAuth();
+
   return (
     <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
       <ItemMeta item={item} />
 
       <div className="space-y-2 text-center">
         <p className="text-4xl font-medium text-slate-900 dark:text-slate-100">{item.japanese}</p>
-        {item.type === 'kanji' ? (
-          <KanjiFrontReading item={item} />
-        ) : item.reading ? (
+        {item.type !== 'kanji' && item.reading ? (
           <p className="text-lg text-slate-500 dark:text-slate-400">{item.reading}</p>
         ) : null}
       </div>
@@ -50,12 +66,16 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
           <p className="text-lg font-medium text-slate-900 dark:text-slate-100">
             {formatItemMeaning(item.meaning, item.meaningAlt)}
           </p>
-          {item.type === 'kanji' ? <KanjiReadingsBlock item={item} /> : null}
-          <ItemExamplesList
-            itemId={item.id}
-            fallbackExample={item.example}
-            fallbackExampleReading={item.exampleReading}
-          />
+          {item.type === 'kanji' ? (
+            <>
+              <KanjiReadingsBlock item={item} />
+              {user ? (
+                <KanjiCompoundsList userId={user.id} kanjiCharacter={item.japanese} />
+              ) : null}
+            </>
+          ) : (
+            <ExampleSentence item={item} />
+          )}
           {item.notes ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">{item.notes}</p>
           ) : null}

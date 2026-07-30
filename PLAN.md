@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-21 (MVP step 11 — bulk import, `item_examples`, mediopunkt meanings)  
+> **Last updated:** 2026-07-30 (kanji compounds reworked as plain vocabulary `LearningItem`s; relationship derived live, not stored; standalone kun reading removed; `/items/:id` detail page)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,14 +12,14 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` applied; **`kanji_reading_status` + `item_examples` pending `supabase db push`** |
+| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` applied; **`kanji_reading_status` (onyomi/kunyomi only) pending `supabase db push`** |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
 | CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
 | SRS + features | ✅ Done | Steps 1–9 complete |
-| Search & polish | 🔄 In progress | Steps 10–11 done (incl. `item_examples`, meaning format); steps 12–15 remain |
+| Search & polish | 🔄 In progress | Steps 10–11 done (compounds now derived vocabulary items, meaning format); steps 12–15 remain |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -27,9 +27,7 @@
 - [x] `supabase init`, linked project, migrations in `supabase/migrations/`
 - [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`)
 - [ ] Remote schema (pending `supabase db push`, **owner only**):
-  - `20260720230000_kanji_reading_status.sql`
-  - `20260721013000_item_examples.sql`
-  - `20260721014500_item_examples_reading_unique.sql`
+  - `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` only (no standalone `reading_status`)
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -41,7 +39,7 @@
 - [x] Auth — `AuthProvider`, login form, `RequireAuth`, session persistence
 - [x] Shared UI primitives — `Button`, `Input`, `Select`, `Textarea`, `FormAlert`, `ConfirmDialog` (`src/components/ui/`)
 - [x] Domain types mirroring §8 (`src/types/`)
-- [x] Dexie schema — 13 stores mirroring Postgres + `syncMeta` / `pendingChanges` (`src/lib/db/`; v3 adds `itemExamples`)
+- [x] Dexie schema — 12 stores mirroring Postgres + `syncMeta` / `pendingChanges` (`src/lib/db/`; v4 drops `itemExamples` — compound/kanji relationship is derived live by text search, never stored)
 - [x] Repository layer — upsert/list/get per entity; writes enqueue `pendingChanges`
 - [x] Device ID + sync metadata helpers (`ensureSyncMeta`, `getDeviceId`)
 - [x] `README.md` with setup instructions
@@ -68,14 +66,15 @@
 - [x] **Delete UX** — `ConfirmDialog`; confirm + success feedback on item delete (`ItemList`); larger kanji in Learn/Search
 - [x] **Bulk data cleanup** — `lib/maintenance/deleteKanjiItems.ts`; Settings danger zone (delete all kanji + related SRS/links/examples/batches); Topics “Delete all topics”
 - [x] **Sync push order** — pending changes sorted by `SYNC_TABLE_ORDER` before push (FK-safe batch deletes)
-- [x] **Kanji tri-state readings** — `ReadingStatus` (`unset` | `none` | `set`) on `reading`, `onyomi`, `kunyomi`; form + review UI; `utils/kanjiReading.ts`; migration `20260720230000_kanji_reading_status.sql`
-- [x] **Import templates + Genki CSVs** — `templates/import/*.csv` (English `meaning`, optional `notes`); working source files in `data/genki1-n5-kanji.csv`, `data/genki2-n4-kanji.csv`
-- [x] **Bulk CSV import** — `lib/import/`, `features/import/`; `/import` upload/paste → preview → options → execute; kanji tri-state via `parseImportReadingCell()`; `ImportBatch` audit; nav link
-- [x] **`item_examples`** — child table for multiple compound examples per item; Genki CSV rows merge to one kanji + N examples; sync + Dexie v3; `ItemExamplesList` on review card back; bulk kanji delete cascades examples
+- [x] **Kanji tri-state readings** — `ReadingStatus` (`unset` | `none` | `set`) on `onyomi`, `kunyomi` only; form + review UI; `utils/kanjiReading.ts`; migration `20260720230000_kanji_reading_status.sql` (no standalone/dictionary-style kun reading for kanji — no dictionary lists one; the reading actually used is learned from linked vocabulary)
+- [x] **Import templates** — `templates/import/*.csv` (English `meaning`, optional `notes`); kanji template carries no `reading`, `example`, or compound columns
+- [x] **Bulk CSV import** — `lib/import/`, `features/import/`; `/import` upload/paste → preview → options → execute; kanji onyomi/kunyomi via `parseImportReadingCell()`; `ImportBatch` audit; nav link
+- [x] **Compounds as vocabulary** — compound words (e.g. `一時`) are imported/created as ordinary `word` `LearningItem`s with their own SRS; the kanji ↔ compound relationship is *derived live* by text search (`findVocabularyItemsContainingKanji`, `findKanjiItemsByCharacters`), never stored in a junction table
+- [x] **Item detail page** — `/items/:id` read-only view; shows compounds for kanji (`KanjiCompoundsList`), component kanji for words (`WordKanjiBreakdown`)
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply pending migrations (§9.6) before syncing kanji status fields or `item_examples`
+- [ ] Owner: `supabase db push` — apply pending migrations (§9.6) before syncing kanji status fields
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -237,12 +236,13 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - Optimizer: `@open-spaced-repetition/binding` or export reviews → optimize offline
 - Settings: `srsAlgorithm: 'sm2' | 'fsrs'`; optional `fsrsParams` after optimization; readiness hints per [§14.5](#145-srs-algorithm--fsrs-migration)
 
-### ADR-015: Kanji reading tri-state + semantics
-**Decision:** Each kanji reading field (`reading`, `onyomi`, `kunyomi`) has an explicit **`ReadingStatus`**: `unset` | `none` | `set`.  
+### ADR-015: Kanji readings — onyomi/kunyomi only, no standalone reading; compounds derived live
+
+**Decision (revised 2026-07-30):** Kanji items carry only **`onyomi`** and **`kunyomi`**, each with an explicit **`ReadingStatus`**: `unset` | `none` | `set`. There is **no standalone "kun when the kanji is a word on its own" field** (`reading`/`readingStatus` on kanji was removed). No dictionary lists a "standalone" reading for a kanji in isolation — only on'yomi/kun'yomi. The reading actually used for a given kanji is learned from the vocabulary that contains it, which is looked up dynamically (see below), not stored redundantly on the kanji row.
+
 **Semantics:**
-- `reading` = kun reading when the kanji stands alone as a word (e.g. 右 → みぎ)
 - `onyomi` = on readings (display in **katakana**)
-- `kunyomi` = kun readings in compounds (display in **hiragana**)
+- `kunyomi` = kun readings (display in **hiragana**)
 - **`unset`** — not entered yet (UI: *not set*, amber italic)
 - **`none`** — confirmed absent (UI: `—`)
 - **`set`** — value stored and shown (normalized display script per field)
@@ -252,11 +252,17 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - `-`, `—`, `–`, `none`, `n/a` → `none` (prefer `-` when typing)
 - Any other text → `set` (trimmed value)
 
-**Rejected:** Inferring primary `reading` from `exampleReading` at display time — show stored values only.
+**Compounds are derived, not stored:** A compound word (e.g. `一時`) is just an ordinary `word` `LearningItem` with its own SRS — it is never attached to a kanji row. The kanji ↔ compound relationship is computed live by text search whenever it's needed:
+- `findVocabularyItemsContainingKanji(userId, kanjiChar)` — vocabulary items whose `japanese` contains the character (kanji review card back, kanji detail page)
+- `findKanjiItemsByCharacters(userId, chars)` — kanji items matching characters extracted from a word's `japanese` (word detail page's "made of" breakdown)
 
-**Alternatives considered:** Boolean “has reading” flags (rejected: cannot distinguish unset vs confirmed none); single combined reading string (rejected: loses on/kun/standalone distinction).
+This replaces the earlier `item_examples` child-table design and the `item_kanji_links` junction-table idea considered along the way: editing a compound never requires knowing which kanji it "belongs to," and there is nothing to keep in sync.
 
-**Migration:** `20260720230000_kanji_reading_status.sql` adds `reading_status`, `onyomi_status`, `kunyomi_status` on `learning_items`. Owner applies via `supabase db push` (ADR-013).
+**Rejected:** Storing compounds as child rows of a kanji item (`item_examples`) — a compound is a full vocabulary word, not example text. Storing the relationship in a junction table (`item_kanji_links`) — unnecessary; kanji characters are a substring of the compound's own text, so the relationship is always cheaply derivable.
+
+**Alternatives considered:** Boolean “has reading” flags (rejected: cannot distinguish unset vs confirmed none); single combined reading string (rejected: loses on/kun distinction).
+
+**Migration:** `20260720230000_kanji_reading_status.sql` adds `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`). Owner applies via `supabase db push` (ADR-013).
 
 ---
 
@@ -309,13 +315,13 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - [ ] Five skills: Vocabulary, Kanji, Grammar, Reading, Listening
 - [ ] Levels: N5, N4
 - [ ] Topics (optionally hierarchical) — *flat list CRUD done; **topics optional on items**; hierarchy pending*
-- [x] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done; kanji tri-state readings; compound examples in `item_examples`*
+- [x] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done; kanji onyomi/kunyomi readings; compounds are plain vocabulary items, kanji ↔ compound relationship derived live (§8.4.2)*
 - [ ] SRS (**SM-2** ✅ step 7; **FSRS** opt-in later — ADR-014) for vocabulary, kanji, grammar
 - [x] Manual single-item create/edit — `/add`, edit via `?edit=`, browse `/learn/:skill`
 - [x] Bulk import — CSV upload or paste, auto column mapping, preview, duplicate options — *`/import` (step 11); paste/TSV column map UI pending*
 - [x] Source metadata — multiple sources per item — *checkbox picker + per-source reference; import creates/links sources*
 - [x] Duplicate handling — skip / attach source / update — *import options; manual create still blocks duplicate on save*
-- [x] Import preview with validation and error list — *`ImportPreviewTable` marks valid / example / duplicate / invalid*
+- [x] Import preview with validation and error list — *`ImportPreviewTable` marks valid / duplicate / invalid*
 
 #### Search
 - [x] Global search across vocabulary, kanji, grammar, topics, tags, sources — *`/search` (step 10)*
@@ -392,7 +398,9 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 ├──────────────────────────────────────────────────────────────┤
 │  Learn                                                        │
 │    ├─ Vocabulary / Kanji / Grammar / Reading / Listening      │
-│    └─ Filters: level, topic, tag, source, status              │
+│    ├─ Filters: level, topic, tag, source, status              │
+│    └─ Item detail (/items/:id) — read-only; kanji show        │
+│       compounds, words show component kanji                   │
 ├──────────────────────────────────────────────────────────────┤
 │  Topics & N5 Recap                                            │
 │    └─ Topic list with mastery %, needsAttention flag          │
@@ -474,17 +482,16 @@ LearningItem {
   skill: "vocabulary" | "kanji" | "grammar" | "reading" | "listening"
 
   japanese: string                // word, kanji, grammar pattern, or passage title
-  reading?: string
+  reading?: string                // vocab/grammar/reading/listening only — kanji items never set this
   meaning: string                 // English; multiple senses joined with " · "
   meaningAlt?: string             // legacy; merged into meaning on save/display
-  example?: string              // vocab/grammar only; kanji examples → item_examples
+  example?: string                // vocab/grammar's own usage sentence
   exampleReading?: string
   notes?: string
 
-  // Kanji-specific
+  // Kanji-specific — onyomi/kunyomi only, no standalone reading (see ADR-015)
   onyomi?: string
   kunyomi?: string
-  readingStatus?: "unset" | "none" | "set"   // kun when kanji stands alone
   onyomiStatus?: "unset" | "none" | "set"
   kunyomiStatus?: "unset" | "none" | "set"
 
@@ -513,38 +520,23 @@ LearningItem {
 
 | Field | Meaning | Display when `set` |
 |-------|---------|-------------------|
-| `reading` + `readingStatus` | Kun when kanji is a standalone word | Hiragana |
 | `onyomi` + `onyomiStatus` | On readings | Katakana |
-| `kunyomi` + `kunyomiStatus` | Kun readings (compounds) | Hiragana |
+| `kunyomi` + `kunyomiStatus` | Kun readings | Hiragana |
+
+No standalone "kun when the kanji is a word on its own" field exists (see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live)). The reading actually used for a given kanji comes from its linked vocabulary, looked up live (§8.4.2).
 
 **Form (`KanjiReadingField`):** text input + “No … reading” checkbox → stores `none` with empty value.  
-**Review (`KanjiReadingsBlock`):** always shows all three lines on card back; front shows standalone kun only.  
+**Review (`KanjiReadingsBlock`):** always shows both lines (On, Kun) on card back; front shows the kanji character only.  
 **Helpers:** `src/utils/kanjiReading.ts` — display, validation, `parseImportReadingCell()` (used by bulk import).
 
-### 8.4.2 ItemExample (implemented)
+### 8.4.2 Kanji ↔ compound relationship (derived, not stored)
 
-Multiple compound examples per item (Genki-style CSV: same kanji, different `example` rows).
+Compound words (e.g. `一時`) are plain `word` `LearningItem`s with their own SRS — there is no child table and no junction table. The relationship is computed live by text search, in `src/lib/db/repositories/kanjiCompoundLookup.ts`:
 
-```typescript
-ItemExample {
-  id: string
-  userId: string
-  itemId: string
-  example: string
-  exampleReading?: string
-  exampleMeaning?: string       // normalized with mediopunkt (§12.1)
-  sortOrder: number
-  createdAt: string
-  updatedAt: string
-  deletedAt?: string
-}
-```
+- `findVocabularyItemsContainingKanji(userId, kanjiChar)` — all vocabulary items whose `japanese` contains the character. Used by `KanjiCompoundsList` on the kanji review card back and the kanji detail page.
+- `findKanjiItemsByCharacters(userId, chars)` — kanji items matching a set of characters. Used by `WordKanjiBreakdown` (word detail page's "made of" breakdown), fed by `extractKanjiCharacters()` (`utils/japaneseText.ts`) which pulls CJK characters out of a word's `japanese`.
 
-**Uniqueness:** `(item_id, example, COALESCE(example_reading, ''))` — same word, different reading (e.g. 十/ジュウ vs 十/とお) are distinct rows.
-
-**Import:** repeated kanji rows → one `LearningItem` + upsert into `item_examples` (`exampleHelpers.ts`, `executeImport.ts`).  
-**UI:** `ItemExamplesList` on kanji review card back; not stored on `learning_items.example` for kanji.  
-**Repo:** `src/lib/db/repositories/itemExampleRepository.ts`; synced after `learningItems` in `SYNC_TABLE_ORDER`.
+**Why derived instead of stored:** editing a compound is exactly as simple as editing any other vocabulary item — nothing to keep in sync, no "which kanji does this belong to" step. This replaced two earlier designs considered along the way: an `item_examples` child table (rejected — a compound is a full word, not example text) and an `item_kanji_links` junction table (rejected — unnecessary, since kanji characters are always a cheap substring match against the compound's own text).
 
 ### 8.4.3 Meaning format (implemented)
 
@@ -701,8 +693,7 @@ Supabase (EU region)
 
 topics
 sources
-learning_items          -- incl. reading_status, onyomi_status, kunyomi_status (migration 20260720230000)
-item_examples           -- multiple compound examples per item (migrations 20260721013000, 20260721014500)
+learning_items          -- incl. onyomi_status, kunyomi_status only (migration 20260720230000); no reading_status
 item_sources
 item_topics          -- optional junction: item_id ↔ topic_id
 reviews
@@ -711,6 +702,8 @@ study_sessions
 import_batches
 app_settings
 ```
+
+No `item_examples` or `item_kanji_links` table — the kanji ↔ compound relationship is derived live by text search, never stored (§8.4.2, [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live)).
 
 ### 9.3 Indexes (performance)
 
@@ -799,9 +792,7 @@ Applied on remote:
 
 Pending on remote (files committed; owner applies via `supabase db push`):
 
-- [ ] `20260720230000_kanji_reading_status.sql` — `reading_status`, `onyomi_status`, `kunyomi_status` on `learning_items`
-- [ ] `20260721013000_item_examples.sql` — `item_examples` table + RLS
-- [ ] `20260721014500_item_examples_reading_unique.sql` — uniqueness on `(item_id, example, COALESCE(example_reading, ''))`
+- [ ] `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`; standalone kun reading was dropped — see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 
 The schema is split across the first two migrations (`initial_schema` + `complete_schema`):
 
@@ -835,14 +826,14 @@ Never commit `.env`. Never use the **secret** key in the frontend.
 
 ### Dexie schema (mirrors Postgres)
 
-**Current version:** `DB_SCHEMA_VERSION = 3` (`src/lib/db/constants.ts`)
+**Current version:** `DB_SCHEMA_VERSION = 4` (`src/lib/db/constants.ts`)
 
 ```typescript
 // v1 — core stores (excerpt)
 db.version(1).stores({
   topics:             'id, userId, level, skill, name, updatedAt, …',
   sources:            'id, userId, label, updatedAt, …',
-  learningItems:      'id, userId, type, level, skill, japanese, reading, updatedAt, *tags, …',
+  learningItems:      'id, userId, type, level, skill, japanese, reading, updatedAt, *tags, [userId+japanese+type], [userId+level+skill], …',
   itemSources:        'id, userId, itemId, sourceId, …',
   itemTopics:         'id, userId, itemId, topicId, …',
   reviews:            'id, userId, itemId, reviewedAt, …',
@@ -856,9 +847,12 @@ db.version(1).stores({
 
 // v2 — add itemExamples (unique on itemId+example)
 // v3 — compound index [itemId+example+exampleReading] for on/kun reading pairs
-db.version(3).stores({
-  itemExamples:
-    'id, userId, itemId, example, exampleReading, sortOrder, updatedAt, deletedAt, [itemId+example+exampleReading], [userId+itemId]',
+// v4 — drop itemExamples entirely: compounds are now plain vocabulary LearningItems,
+//      and the kanji ↔ compound relationship is derived live by text search
+//      (kanjiCompoundLookup.ts) via the existing [userId+japanese+type] index — no
+//      child table needed.
+db.version(4).stores({
+  itemExamples: null,
 });
 ```
 
@@ -895,7 +889,6 @@ db.version(3).stores({
 | Entity | Rule |
 |--------|------|
 | Topic, Source, LearningItem, UserProgress, AppSettings | Same `id` → newer `updatedAt` wins; respect `deletedAt` |
-| ItemExample | Same `id` → newer `updatedAt` wins; soft-delete via `deletedAt`; child of `LearningItem` |
 | ItemSource, ItemTopic | Upsert on natural key `(item_id, source_id)` / `(item_id, topic_id)` — dedupe local rows on pull; see `UPSERT_ON_CONFLICT` in `lib/sync/tables.ts` |
 | Review | Append-only; dedupe by `id` |
 | StudySession, ImportBatch | Union; dedupe by `id` |
@@ -906,7 +899,7 @@ Conflicts are rare (single user). Fallback: newer `updatedAt` wins.
 - **Required:** app start, after study session
 - **Optional:** every 5–15 min when online, manual "Sync now" button
 - **On bulk import:** push after import completes
-- **Push order:** `SYNC_TABLE_ORDER` in `lib/sync/tables.ts` — `learningItems` before `itemExamples` before junction tables; `pendingChanges` sorted accordingly before upload
+- **Push order:** `SYNC_TABLE_ORDER` in `lib/sync/tables.ts` — `learningItems` before junction tables (`itemSources`, `itemTopics`); `pendingChanges` sorted accordingly before upload
 
 ### 11.4 Sync status UI
 - Last synced timestamp
@@ -927,7 +920,7 @@ Conflicts are rare (single user). Fallback: newer `updatedAt` wins.
 
 ## 12. Bulk Import
 
-> **Status:** ✅ Implemented (MVP step 11). `/import` — upload or paste CSV, preview, duplicate/example handling, local save + auto sync. Kanji tri-state columns via [ADR-015](#adr-015-kanji-reading-tri-state--semantics). Kanji compound examples → `item_examples` (§8.4.2). Meaning mediopunkt (§8.4.3).
+> **Status:** ✅ Implemented (MVP step 11), reworked 2026-07-30. `/import` — upload or paste CSV, preview, duplicate handling, local save + auto sync. Kanji onyomi/kunyomi columns via [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live). Compounds are imported as ordinary vocabulary rows — kanji rows never carry `reading`, `example`, or any compound column. Meaning mediopunkt (§8.4.3).
 
 ### 12.1 CSV minimum
 
@@ -942,41 +935,40 @@ grammar,N4,grammar,てから,after doing
 
 ### 12.2 CSV recommended (full)
 
-**Vocabulary / grammar** — same columns as before; optional `notes` last.
+**Vocabulary / grammar** — use `templates/import/vocabulary-template.csv` / `grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,source,source_ref,tags,notes`. A compound word (e.g. `一時`) is simply a `word` row here — nothing links it to a kanji row; that relationship is derived live (§8.4.2).
 
 **Kanji** — use `templates/import/kanji-template.csv`:
 
 ```csv
-type,level,skill,topics,japanese,reading,onyomi,kunyomi,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
-kanji,N5,kanji,direction,右,みぎ,ウ、ユウ,みぎ,right,右手,みぎて,right hand,,,kanji;n5,
-kanji,N5,kanji,time,先,さき,セン,さき,previous · ahead,先生,せんせい,teacher,,,kanji;n5,On'yomi common in compounds like 先生
+type,level,skill,topics,japanese,meaning,onyomi,kunyomi,source,source_ref,tags,notes
+kanji,N5,kanji,direction,右,right,ウ、ユウ,みぎ,,,kanji;n5,
+kanji,N5,kanji,time,先,previous · ahead,セン,さき,,,kanji;n5,
 ```
 
 Column notes:
 - `topics` — comma-separated; optional (items may have zero topics)
-- `reading`, `onyomi`, `kunyomi` — tri-state cells (see [ADR-015](#adr-015-kanji-reading-tri-state--semantics)): empty = unset, `-` = none, text = set
+- `onyomi`, `kunyomi` — tri-state cells (see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live)): empty = unset, `-` = none, text = set. There is no `reading` column for kanji rows — no standalone reading is stored.
 - `meaning` — English; multiple senses separated by ` · ` (mediopunkt). Import also accepts `/` or `;` and normalizes to ` · `
-- `example`, `example_reading`, `example_meaning` — optional compound example; for kanji, stored in `item_examples`, not `learning_items.example`
+- `example`, `example_reading` — vocabulary/grammar's own usage sentence, stored directly on that item; not applicable to kanji rows
 - `source` / `source_ref` — optional; create Source if missing
-- `notes` — optional free text (last column on all templates)
+- `notes` — optional free text (last column on all templates); can also be added/edited later via the item edit form
 - Legacy column name `german` — treat as alias for `meaning` if present in old files
 
 **Working source files:**
-- `data/genki1-n5-kanji.csv` (~425 rows)
-- `data/genki2-n4-kanji.csv` (~590 rows)
+- `data/jlpt-n5-kanji.csv` (80 rows) — full JLPT N5 kanji list (source: tanos.co.uk), onyomi/kunyomi only
+- `data/jlpt-n4-kanji.csv` (198 rows) — full JLPT N4 kanji list (source: tanos.co.uk), onyomi/kunyomi only
 
 ### 12.3 Import flow
 
 **Implemented on `/import`:**
 1. Upload `.csv` file or paste text
 2. Auto-map columns from header aliases (`columnMap.ts`)
-3. Preview — valid / example / duplicate / invalid rows (`buildPreview.ts`)
+3. Preview — valid / duplicate / invalid rows (`buildPreview.ts`)
    - **valid** — new item (first row for that `type` + `japanese`)
-   - **example** — same kanji/word again with `example` column → adds `item_examples` row (or first row with example when item already in DB)
-   - **duplicate** — exact duplicate item or example already in DB / file
+   - **duplicate** — item with the same `type` + `japanese` already in DB or earlier in the file
    - **invalid** — validation errors
 4. Options — duplicate action (attach source / skip / update); create topics/sources toggles
-5. Execute — save to IndexedDB (`learningItems`, `itemExamples`, topics, sources, links), enqueue sync, create `ImportBatch` (`executeImport.ts`)
+5. Execute — save to IndexedDB (`learningItems`, topics, sources, links), enqueue sync, create `ImportBatch` (`executeImport.ts`)
 6. Result screen — counts + row errors; prompts **Sync now** (auto-triggered when online)
 
 **Pending (v1 polish):**
@@ -985,10 +977,8 @@ Column notes:
 
 ### 12.4 Duplicate detection
 
-- Primary item key: `type` + normalized `japanese`
-- Example key: `(item_id, example, example_reading)` — see §8.4.2
+- Item key: `type` + normalized `japanese`
 - Default action: **attach source** (do not create duplicate item)
-- Genki kanji CSVs intentionally repeat the same kanji with different examples — preview marks these as **example**, not duplicate
 
 ### 12.5 Defaults for missing fields
 
@@ -999,28 +989,27 @@ Column notes:
 ### 12.6 CSV templates to ship
 
 - [x] `templates/import/vocabulary-template.csv`
-- [x] `templates/import/kanji-template.csv` — tri-state reading columns + optional `notes`
+- [x] `templates/import/kanji-template.csv` — onyomi/kunyomi only, no `reading` or compound columns
 - [x] `templates/import/grammar-template.csv`
 
-### 12.7 Import implementation (step 11 — done)
+### 12.7 Import implementation (reworked 2026-07-30)
 
 **`lib/import/`:**
 - `parseCsv.ts` — quoted-field CSV parser
 - `columnMap.ts` — header aliases (`german` → meaning, etc.)
 - `normalizeField.ts` — defaults, topics, tags, meaning normalization (`meaningText.ts`)
-- `parseRow.ts` — row validation; kanji uses `parseImportReadingCell()`; normalizes `example_meaning`
-- `exampleHelpers.ts` — example row detection, match keys, upsert helpers
-- `buildPreview.ts` — DB + in-file duplicate/example detection
-- `executeImport.ts` — batch, items, `itemExamples`, topics, sources, links; re-checks at execute time
+- `parseRow.ts` — row validation; kanji uses `parseImportReadingCell()` for onyomi/kunyomi only
+- `buildPreview.ts` — DB + in-file duplicate detection (valid / duplicate / invalid only)
+- `executeImport.ts` — batch, items, topics, sources, links; re-checks at execute time
 
 **`features/import/`:**
 - `ImportView`, `ImportInput`, `ImportPreviewTable`, `ImportOptionsPanel`, `ImportResultView`
 - `useImport` — preview → execute → `syncNow()`
 
 **Notes:**
-- Kanji rows persist `readingStatus`, `onyomiStatus`, `kunyomiStatus` alongside values
-- Kanji `example` / `example_reading` / `example_meaning` → `item_examples`; meanings normalized to mediopunkt
-- Default duplicate action: **attach source** (Genki CSV has repeated kanji rows — expected)
+- Kanji rows persist `onyomiStatus`, `kunyomiStatus` alongside values; `reading` is always `undefined` for kanji
+- Vocabulary/grammar `example` / `example_reading` are stored directly on `learning_items` — no child table
+- Default duplicate action: **attach source**
 - After bulk delete + re-import, run **Sync now** if auto-sync did not run (offline)
 
 ---
@@ -1166,11 +1155,11 @@ Aggregate: item → topic → skill → level → overall readiness
 
 ### 14.6 Kanji review display (implemented)
 
-- **Front:** kanji character + standalone kun (`reading` / `readingStatus`) when set; meaning hidden until flip
-- **Back:** `KanjiReadingsBlock` — always three lines: Kun (standalone), On, Kun — each shows value, `—`, or *not set*; **`ItemExamplesList`** — compound examples from `item_examples`
+- **Front:** kanji character only; meaning hidden until flip (no standalone reading — see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
+- **Back:** `KanjiReadingsBlock` — two lines, On and Kun — each shows value, `—`, or *not set*; **`KanjiCompoundsList`** — vocabulary compounds found by live text search (`findVocabularyItemsContainingKanji`), not a stored relationship
 - **Meaning:** `formatItemMeaning()` — mediopunkt-separated senses (§8.4.3)
-- **Learn / Search lists:** kanji shown larger; reading on its own line (no brackets)
-- No runtime inference from `exampleReading` — only stored fields ([ADR-015](#adr-015-kanji-reading-tri-state--semantics))
+- **Learn / Search lists:** kanji shown larger; no reading subtitle (kanji never has one)
+- No runtime inference from `exampleReading` — only stored fields ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 
 ---
 
@@ -1258,8 +1247,9 @@ Use OGG or lower bitrate to save space if needed.
 9. [x] Dashboard + "Study today" — readiness widgets, mixed review queue (§14.1)
 10. [x] Global search — `lib/search/`, debounced `/search`, filters, grouped results (§13)
 10b. [x] Delete UX + bulk cleanup — `ConfirmDialog`, Settings danger zone, Topics delete-all, `lib/maintenance/`
-10c. [x] Kanji tri-state readings — types, form, review UI, sync mappers, migration file ([ADR-015](#adr-015-kanji-reading-tri-state--semantics))
-11. [x] Bulk import CSV — `lib/import/`, `/import` UI, kanji tri-state, Genki CSVs, `item_examples`, mediopunkt meanings (§12)
+10c. [x] Kanji onyomi/kunyomi tri-state readings — types, form, review UI, sync mappers, migration file ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
+11. [x] Bulk import CSV — `lib/import/`, `/import` UI, kanji onyomi/kunyomi, mediopunkt meanings (§12)
+11b. [x] Compounds as derived vocabulary — kanji ↔ compound relationship computed live by text search, not stored; `/items/:id` detail page ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 12. [ ] Audio upload + playback (Storage)
 13. [ ] JSON export/import (backup)
 14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(partial: danger zone done; sync status in header)*
@@ -1309,7 +1299,7 @@ Supabase is primary; JSON export is additional safety net.
 - [x] Junction table `item_topics` vs `topicIds[]` array on item — **`item_topics` table in migrations**
 - [ ] Signed URL expiry duration for audio
 - [ ] Default exam date exact day (early December 2026 — set when JLPT date confirmed)
-- [x] **`item_examples` child table** — multiple example sentences per kanji/item; import, sync, review UI (§8.4.2)
+- [x] **Kanji ↔ compound relationship** — derived live by text search, not a stored child/junction table; compounds are plain vocabulary `LearningItem`s (§8.4.2, [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 - [x] **Meaning separator** — mediopunkt (` · `) for multiple senses; `/` and `;` normalized on import (§8.4.3)
 - [ ] Supabase Realtime in v2 — needed or is delta sync sufficient?
 - [ ] Audio offline cache strategy in v2 (Cache API vs IndexedDB blobs)
@@ -1502,6 +1492,7 @@ Components and hooks never touch Dexie tables directly — go through repositori
 /study                → StudyTodayPage
 /learn/:skill         → LearnBrowsePage
 /topics               → TopicsPage
+/items/:id            → ItemDetailPage    // read-only; kanji ↔ compound derived live (§8.4.2)
 /add                  → AddItemPage
 /import               → BulkImportPage
 /search               → SearchPage
@@ -1682,6 +1673,12 @@ const id = createId();
 | 2026-07-21 | **`item_examples`** — child table, Dexie v3, sync, import merges Genki rows, review card list, reading-unique index |
 | 2026-07-21 | **Bulk import (step 11)** — `lib/import/`, `/import` UI, preview + duplicate/example options, kanji tri-state import, `ImportBatch`, nav link |
 | 2026-07-21 | **Meaning format** — multiple senses stored/displayed with mediopunkt (` · `); import normalizes `/` and `;` via `meaningText.ts` |
+| 2026-07-30 | **Compounds reworked as plain vocabulary** — `item_examples` child table removed; compound words are ordinary `word` `LearningItem`s with their own SRS; kanji ↔ compound relationship derived live by text search (`kanjiCompoundLookup.ts`), never stored — no `item_examples`, no `item_kanji_links` junction table (revised ADR-015) |
+| 2026-07-30 | **Standalone kun reading removed from kanji** — `reading`/`readingStatus` dropped from kanji items; only `onyomi`/`kunyomi` remain, since no dictionary lists a standalone reading and the actually-used reading is learned from linked vocabulary; migration `20260720230000_kanji_reading_status.sql` now only adds `onyomi_status`/`kunyomi_status` |
+| 2026-07-30 | **`/items/:id` detail page** — read-only view (`ItemDetailPage`, `ItemDetailView`); `KanjiCompoundsList` shows compounds for kanji, `WordKanjiBreakdown` shows component kanji for words; linked from `ItemList` and `SearchResultItem` |
+| 2026-07-30 | **Kanji import CSVs simplified** — `kanji-template.csv` drops `reading` and all compound/example columns (onyomi/kunyomi/meaning/topics/source/tags/notes only); old Genki CSV data files (`data/genki1-n5-kanji.csv`, `data/genki2-n4-kanji.csv`) deleted; `notes` remains optional and editable later via the item form |
+| 2026-07-30 | **Review/list UI simplified** — kanji review-card front shows character only (no reading); kanji list/search subtitle shows nothing; import preview drops the `example` row status (every row is now a full item) |
+| 2026-07-30 | **New working kanji CSVs** — `data/jlpt-n5-kanji.csv` (80 rows), `data/jlpt-n4-kanji.csv` (198 rows); full JLPT lists (source: tanos.co.uk), already matching the new `kanji-template.csv` shape (onyomi/kunyomi only) |
 
 ---
 

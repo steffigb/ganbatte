@@ -2,6 +2,7 @@ export const routes = {
   dashboard: '/',
   study: '/study',
   learn: (skill: string) => `/learn/${skill}`,
+  itemDetail: (id: string) => `/items/${id}`,
   topics: '/topics',
   add: '/add',
   import: '/import',
