@@ -50,7 +50,7 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
         </>
       ) : null}
 
-      {item.type === 'word' ? (
+      {item.type === 'expression' ? (
         <>
           {item.example ? (
             <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">

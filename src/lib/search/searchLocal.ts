@@ -30,7 +30,7 @@ export type SearchLocalInput = {
 
 function groupKeyForItemType(type: ItemType): SearchItemGroupKey {
   switch (type) {
-    case 'word':
+    case 'expression':
       return 'vocabulary';
     case 'kanji':
       return 'kanji';
@@ -45,8 +45,8 @@ function groupKeyForItemType(type: ItemType): SearchItemGroupKey {
 
 function itemTypeLabel(type: ItemType): string {
   switch (type) {
-    case 'word':
-      return 'word';
+    case 'expression':
+      return 'expression';
     case 'kanji':
       return 'kanji';
     case 'grammar':

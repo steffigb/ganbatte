@@ -34,7 +34,7 @@ export async function findVocabularyItemsContainingKanji(
     .equals(userId)
     .filter(
       (item) =>
-        item.type === 'word' && isNotDeleted(item) && item.japanese.includes(kanjiChar),
+        item.type === 'expression' && isNotDeleted(item) && item.japanese.includes(kanjiChar),
     )
     .toArray();
 

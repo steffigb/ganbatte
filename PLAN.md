@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-30 (kanji compounds reworked as plain vocabulary `LearningItem`s; relationship derived live, not stored; standalone kun reading removed; `/items/:id` detail page)  
+> **Last updated:** 2026-07-31 (`kanji_reading_status` migration applied to remote; migration history repaired)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,7 +12,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` applied; **`kanji_reading_status` (onyomi/kunyomi only) pending `supabase db push`** |
+| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` + `kanji_reading_status` applied; migration history repaired; **`rename_word_to_expression` pending `supabase db push`** |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
@@ -25,9 +25,9 @@
 - [x] Git repository + `.gitignore` (incl. `.env`)
 - [x] Supabase project created (EU region)
 - [x] `supabase init`, linked project, migrations in `supabase/migrations/`
-- [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`)
+- [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`, `20260720230000_kanji_reading_status`)
 - [ ] Remote schema (pending `supabase db push`, **owner only**):
-  - `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` only (no standalone `reading_status`)
+  - `20260731210000_rename_word_to_expression.sql` — `learning_items.type` value `'word'` → `'expression'`
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -69,12 +69,13 @@
 - [x] **Kanji tri-state readings** — `ReadingStatus` (`unset` | `none` | `set`) on `onyomi`, `kunyomi` only; form + review UI; `utils/kanjiReading.ts`; migration `20260720230000_kanji_reading_status.sql` (no standalone/dictionary-style kun reading for kanji — no dictionary lists one; the reading actually used is learned from linked vocabulary)
 - [x] **Import templates** — `templates/import/*.csv` (English `meaning`, optional `notes`); kanji template carries no `reading`, `example`, or compound columns
 - [x] **Bulk CSV import** — `lib/import/`, `features/import/`; `/import` upload/paste → preview → options → execute; kanji onyomi/kunyomi via `parseImportReadingCell()`; `ImportBatch` audit; nav link
-- [x] **Compounds as vocabulary** — compound words (e.g. `一時`) are imported/created as ordinary `word` `LearningItem`s with their own SRS; the kanji ↔ compound relationship is *derived live* by text search (`findVocabularyItemsContainingKanji`, `findKanjiItemsByCharacters`), never stored in a junction table
+- [x] **Compounds as vocabulary** — compound words (e.g. `一時`) are imported/created as ordinary `expression` `LearningItem`s with their own SRS; the kanji ↔ compound relationship is *derived live* by text search (`findVocabularyItemsContainingKanji`, `findKanjiItemsByCharacters`), never stored in a junction table
+- [x] **`type: "word"` renamed to `"expression"`** (2026-07-31) — vocabulary entries are often multi-word (verbs, set phrases, e.g. お腹が空く), not single dictionary words; migration `20260731210000_rename_word_to_expression.sql`
 - [x] **Item detail page** — `/items/:id` read-only view; shows compounds for kanji (`KanjiCompoundsList`), component kanji for words (`WordKanjiBreakdown`)
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply pending migrations (§9.6) before syncing kanji status fields
+- [ ] Owner: `supabase db push` — apply `20260731210000_rename_word_to_expression.sql`
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -252,7 +253,7 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 - `-`, `—`, `–`, `none`, `n/a` → `none` (prefer `-` when typing)
 - Any other text → `set` (trimmed value)
 
-**Compounds are derived, not stored:** A compound word (e.g. `一時`) is just an ordinary `word` `LearningItem` with its own SRS — it is never attached to a kanji row. The kanji ↔ compound relationship is computed live by text search whenever it's needed:
+**Compounds are derived, not stored:** A compound word (e.g. `一時`) is just an ordinary `expression` `LearningItem` with its own SRS — it is never attached to a kanji row. The kanji ↔ compound relationship is computed live by text search whenever it's needed:
 - `findVocabularyItemsContainingKanji(userId, kanjiChar)` — vocabulary items whose `japanese` contains the character (kanji review card back, kanji detail page)
 - `findKanjiItemsByCharacters(userId, chars)` — kanji items matching characters extracted from a word's `japanese` (word detail page's "made of" breakdown)
 
@@ -315,7 +316,7 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 - [ ] Five skills: Vocabulary, Kanji, Grammar, Reading, Listening
 - [ ] Levels: N5, N4
 - [ ] Topics (optionally hierarchical) — *flat list CRUD done; **topics optional on items**; hierarchy pending*
-- [x] Learning Items: word, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done; kanji onyomi/kunyomi readings; compounds are plain vocabulary items, kanji ↔ compound relationship derived live (§8.4.2)*
+- [x] Learning Items: expression, kanji, grammar (reading/listening simplified in v1) — *manual CRUD done; kanji onyomi/kunyomi readings; compounds are plain vocabulary items, kanji ↔ compound relationship derived live (§8.4.2)*
 - [ ] SRS (**SM-2** ✅ step 7; **FSRS** opt-in later — ADR-014) for vocabulary, kanji, grammar
 - [x] Manual single-item create/edit — `/add`, edit via `?edit=`, browse `/learn/:skill`
 - [x] Bulk import — CSV upload or paste, auto column mapping, preview, duplicate options — *`/import` (step 11); paste/TSV column map UI pending*
@@ -477,7 +478,7 @@ Source {
 LearningItem {
   id: string
   userId: string
-  type: "word" | "kanji" | "grammar" | "reading" | "listening"
+  type: "expression" | "kanji" | "grammar" | "reading" | "listening"
   level: "N5" | "N4"
   skill: "vocabulary" | "kanji" | "grammar" | "reading" | "listening"
 
@@ -514,7 +515,7 @@ LearningItem {
 }
 ```
 
-**`type` vs `skill`:** Keep both fields. `type` is the item kind (`word`, `kanji`, …); `skill` is the study bucket (`vocabulary`, `kanji`, …). Vocabulary items use `type: "word"` and `skill: "vocabulary"`. Do not collapse into one field.
+**`type` vs `skill`:** Keep both fields. `type` is the item kind (`expression`, `kanji`, …); `skill` is the study bucket (`vocabulary`, `kanji`, …). Vocabulary items use `type: "expression"` and `skill: "vocabulary"` — `expression` covers single words, verbs, and multi-word phrases alike (renamed from `word` 2026-07-31, see decision log). Do not collapse into one field.
 
 ### 8.4.1 Kanji readings (implemented)
 
@@ -531,7 +532,7 @@ No standalone "kun when the kanji is a word on its own" field exists (see [ADR-0
 
 ### 8.4.2 Kanji ↔ compound relationship (derived, not stored)
 
-Compound words (e.g. `一時`) are plain `word` `LearningItem`s with their own SRS — there is no child table and no junction table. The relationship is computed live by text search, in `src/lib/db/repositories/kanjiCompoundLookup.ts`:
+Compound words (e.g. `一時`) are plain `expression` `LearningItem`s with their own SRS — there is no child table and no junction table. The relationship is computed live by text search, in `src/lib/db/repositories/kanjiCompoundLookup.ts`:
 
 - `findVocabularyItemsContainingKanji(userId, kanjiChar)` — all vocabulary items whose `japanese` contains the character. Used by `KanjiCompoundsList` on the kanji review card back and the kanji detail page.
 - `findKanjiItemsByCharacters(userId, chars)` — kanji items matching a set of characters. Used by `WordKanjiBreakdown` (word detail page's "made of" breakdown), fed by `extractKanjiCharacters()` (`utils/japaneseText.ts`) which pulls CJK characters out of a word's `japanese`.
@@ -694,6 +695,7 @@ Supabase (EU region)
 topics
 sources
 learning_items          -- incl. onyomi_status, kunyomi_status only (migration 20260720230000); no reading_status
+                        -- type value 'word' renamed to 'expression' (migration 20260731210000)
 item_sources
 item_topics          -- optional junction: item_id ↔ topic_id
 reviews
@@ -785,14 +787,17 @@ supabase/
 
 #### Initial migration checklist
 
-Applied on remote:
+Applied on remote (confirmed via `supabase migration list`, 2026-07-31):
 
 - [x] `20260713163434_initial_schema.sql`
 - [x] `20260713170000_complete_schema.sql`
+- [x] `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`; standalone kun reading was dropped — see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 
-Pending on remote (files committed; owner applies via `supabase db push`):
+Pending on remote (file committed; owner applies via `supabase db push`):
 
-- [ ] `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`; standalone kun reading was dropped — see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
+- [ ] `20260731210000_rename_word_to_expression.sql` — renames `learning_items.type` value `'word'` → `'expression'` and updates the `CHECK` constraint accordingly
+
+**Migration history repair (2026-07-31):** Two orphaned migration versions (`20260721013000_item_examples`, `20260721014500_item_examples_reading_unique`) were applied on remote during the earlier `item_examples` design, then their local files were deleted when compounds were reworked as derived vocabulary (2026-07-30 rework). This caused `supabase db push` to fail with "Remote migration versions not found in local migrations directory." Fixed via `supabase migration repair --status reverted 20260721013000 20260721014500`, then `supabase db push` completed cleanly.
 
 The schema is split across the first two migrations (`initial_schema` + `complete_schema`):
 
@@ -926,7 +931,7 @@ Conflicts are rare (single user). Fallback: newer `updatedAt` wins.
 
 ```csv
 type,level,skill,japanese,meaning
-word,N4,vocabulary,電車,train
+expression,N4,vocabulary,電車,train
 kanji,N4,kanji,運,transport · carry
 grammar,N4,grammar,てから,after doing
 ```
@@ -935,7 +940,7 @@ grammar,N4,grammar,てから,after doing
 
 ### 12.2 CSV recommended (full)
 
-**Vocabulary / grammar** — use `templates/import/vocabulary-template.csv` / `grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,source,source_ref,tags,notes`. A compound word (e.g. `一時`) is simply a `word` row here — nothing links it to a kanji row; that relationship is derived live (§8.4.2).
+**Vocabulary / grammar** — use `templates/import/vocabulary-template.csv` / `grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,source,source_ref,tags,notes`. A compound word (e.g. `一時`) is simply an `expression` row here — nothing links it to a kanji row; that relationship is derived live (§8.4.2).
 
 **Kanji** — use `templates/import/kanji-template.csv`:
 
@@ -983,7 +988,7 @@ Column notes:
 ### 12.5 Defaults for missing fields
 
 - Missing `level` → N4
-- Missing `skill` → derive from `type` (`word` → `vocabulary`, etc.)
+- Missing `skill` → derive from `type` (`expression` → `vocabulary`, etc.)
 - Missing `topic` → leave item untagged (no forced “Import [date]” topic)
 
 ### 12.6 CSV templates to ship
@@ -1679,6 +1684,8 @@ const id = createId();
 | 2026-07-30 | **Kanji import CSVs simplified** — `kanji-template.csv` drops `reading` and all compound/example columns (onyomi/kunyomi/meaning/topics/source/tags/notes only); old Genki CSV data files (`data/genki1-n5-kanji.csv`, `data/genki2-n4-kanji.csv`) deleted; `notes` remains optional and editable later via the item form |
 | 2026-07-30 | **Review/list UI simplified** — kanji review-card front shows character only (no reading); kanji list/search subtitle shows nothing; import preview drops the `example` row status (every row is now a full item) |
 | 2026-07-30 | **New working kanji CSVs** — `data/jlpt-n5-kanji.csv` (80 rows), `data/jlpt-n4-kanji.csv` (198 rows); full JLPT lists (source: tanos.co.uk), already matching the new `kanji-template.csv` shape (onyomi/kunyomi only) |
+| 2026-07-31 | **`type: "word"` renamed to `"expression"`** — vocabulary entries are frequently multi-word (verbs, set phrases like お腹が空く), not single dictionary words; renamed across `ItemType`, item form, search filters, import parsing (old `word`/`vocab`/`vocabulary` CSV values still map to `expression` for backward compatibility), CSV templates; migration `20260731210000_rename_word_to_expression.sql` pending owner `supabase db push` — no data-loss risk since no vocabulary items existed in the DB yet (only kanji) |
+| 2026-07-31 | **`kanji_reading_status` migration applied to remote** — owner ran `supabase db push`; fixed a migration history mismatch first (`supabase migration repair --status reverted 20260721013000 20260721014500` for orphaned `item_examples` versions), confirmed via `supabase migration list` — all three migrations now in sync local ↔ remote |
 
 ---
 

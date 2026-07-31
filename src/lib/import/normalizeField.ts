@@ -2,7 +2,7 @@ import type { ItemType, JlptLevel, Skill } from '@/types/domain';
 import { defaultItemTypeForSkill, skillForItemType } from '@/utils/itemHelpers';
 import { joinMeaningParts, splitMeaningParts } from '@/utils/meaningText';
 
-const ITEM_TYPES: ItemType[] = ['word', 'kanji', 'grammar', 'reading', 'listening'];
+const ITEM_TYPES: ItemType[] = ['expression', 'kanji', 'grammar', 'reading', 'listening'];
 const LEVELS: JlptLevel[] = ['N5', 'N4'];
 const SKILLS: Skill[] = ['vocabulary', 'kanji', 'grammar', 'reading', 'listening'];
 
@@ -12,8 +12,8 @@ export function parseItemType(value: string | undefined): ItemType | undefined {
   }
 
   const normalized = value.trim().toLowerCase();
-  if (normalized === 'vocab' || normalized === 'vocabulary') {
-    return 'word';
+  if (normalized === 'vocab' || normalized === 'vocabulary' || normalized === 'word') {
+    return 'expression';
   }
 
   return ITEM_TYPES.find((type) => type === normalized);

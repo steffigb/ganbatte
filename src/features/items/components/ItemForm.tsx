@@ -17,7 +17,7 @@ import type { ItemType, JlptLevel } from '@/types/domain';
 import type { KanjiReadingFieldInput } from '@/utils/kanjiReading';
 
 const typeOptions = [
-  { value: 'word', label: 'Word (vocabulary)' },
+  { value: 'expression', label: 'Expression (vocabulary)' },
   { value: 'kanji', label: 'Kanji' },
   { value: 'grammar', label: 'Grammar' },
   { value: 'reading', label: 'Reading' },

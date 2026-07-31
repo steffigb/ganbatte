@@ -7,7 +7,7 @@ export type Skill =
   | 'reading'
   | 'listening';
 
-export type ItemType = 'word' | 'kanji' | 'grammar' | 'reading' | 'listening';
+export type ItemType = 'expression' | 'kanji' | 'grammar' | 'reading' | 'listening';
 
 /** Kanji reading field: unset = not entered, none = confirmed absent, set = has value. */
 export type ReadingStatus = 'unset' | 'none' | 'set';

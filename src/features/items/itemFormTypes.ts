@@ -19,7 +19,7 @@ export type ItemFormValues = {
 };
 
 export const DEFAULT_ITEM_FORM_TYPE_LEVEL: Pick<ItemFormValues, 'type' | 'level'> = {
-  type: 'word',
+  type: 'expression',
   level: 'N4',
 };
 

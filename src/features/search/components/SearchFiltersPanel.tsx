@@ -27,7 +27,7 @@ export function SearchFiltersPanel({
         }
         options={[
           { value: 'all', label: 'All types' },
-          { value: 'word', label: 'Vocabulary' },
+          { value: 'expression', label: 'Vocabulary' },
           { value: 'kanji', label: 'Kanji' },
           { value: 'grammar', label: 'Grammar' },
           { value: 'reading', label: 'Reading' },
