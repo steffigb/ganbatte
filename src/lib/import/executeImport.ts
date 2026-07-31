@@ -208,6 +208,7 @@ function buildLearningItem(
     meaningAlt: row.meaningAlt,
     example: row.example,
     exampleReading: row.exampleReading,
+    exampleMeaning: row.exampleMeaning,
     notes: row.notes,
     tags: existing ? mergeTags(existing.tags, row.tags) : row.tags,
     isCustom: true,

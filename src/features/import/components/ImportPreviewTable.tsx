@@ -87,7 +87,14 @@ export function ImportPreviewTable({ rows, stats }: ImportPreviewTableProps) {
                 <td className="px-3 py-2 align-top">
                   {row.data ? formatItemMeaning(row.data.meaning, row.data.meaningAlt) : '—'}
                 </td>
-                <td className="px-3 py-2 align-top">{row.data?.example ?? '—'}</td>
+                <td className="px-3 py-2 align-top">
+                  {row.data?.example ?? '—'}
+                  {row.data?.exampleMeaning ? (
+                    <span className="block text-slate-500 dark:text-slate-400">
+                      {row.data.exampleMeaning}
+                    </span>
+                  ) : null}
+                </td>
                 <td className="px-3 py-2 align-top text-slate-600 dark:text-slate-400">
                   {row.errors.length > 0 ? row.errors.join('; ') : '—'}
                 </td>

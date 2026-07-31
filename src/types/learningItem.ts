@@ -19,6 +19,7 @@ export interface LearningItem extends Timestamps, SoftDeletable, UserOwned {
   meaningAlt?: string;
   example?: string;
   exampleReading?: string;
+  exampleMeaning?: string;
   notes?: string;
   onyomi?: string;
   onyomiStatus?: ReadingStatus;

@@ -14,6 +14,7 @@ export type ImportFieldKey =
   | 'german'
   | 'example'
   | 'example_reading'
+  | 'example_meaning'
   | 'source'
   | 'source_ref'
   | 'tags'
@@ -48,6 +49,7 @@ export type ParsedImportRow = {
   kunyomiStatus?: ReadingStatus;
   example?: string;
   exampleReading?: string;
+  exampleMeaning?: string;
   notes?: string;
   topicNames: string[];
   tags: string[];

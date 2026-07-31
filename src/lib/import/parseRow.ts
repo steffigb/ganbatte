@@ -59,6 +59,7 @@ export function parseImportRow(
     meaningAlt: meaningFields.meaningAlt,
     example: getCellValue(raw, columnMap, 'example'),
     exampleReading: getCellValue(raw, columnMap, 'example_reading'),
+    exampleMeaning: getCellValue(raw, columnMap, 'example_meaning'),
     notes: getCellValue(raw, columnMap, 'notes'),
     topicNames: parseTopicNames(getCellValue(raw, columnMap, 'topics')),
     tags: parseTags(getCellValue(raw, columnMap, 'tags')),

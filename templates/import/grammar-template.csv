@@ -1,4 +1,4 @@
-type,level,skill,topics,japanese,reading,meaning,example,example_reading,source,source_ref,tags,notes
-grammar,N4,grammar,te-form,てから,てから,nachdem,食べてから寝ます,たべてからねます,Try! N4,Unit 8,n4-grammar,
-grammar,N4,grammar,obligation,なければならない,なければならない,müssen,宿題をしなければならない,しゅくだいをしなければならない,Eigen,,,
-grammar,N5,grammar,basic-polite,です,です,sein (höfliche Form),学生です,がくせいです,,,,
+type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
+grammar,N4,grammar,te-form,てから,てから,nachdem,食べてから寝ます,たべてからねます,I sleep after eating,Try! N4,Unit 8,n4-grammar,
+grammar,N4,grammar,obligation,なければならない,なければならない,müssen,宿題をしなければならない,しゅくだいをしなければならない,I have to do homework,Eigen,,,
+grammar,N5,grammar,basic-polite,です,です,sein (höfliche Form),学生です,がくせいです,I am a student,,,,

@@ -30,6 +30,9 @@ function ExampleSentence({ item }: { item: LearningItem }) {
       {item.exampleReading ? (
         <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
       ) : null}
+      {item.exampleMeaning ? (
+        <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleMeaning}</p>
+      ) : null}
     </div>
   );
 }

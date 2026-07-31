@@ -105,6 +105,7 @@ function getItemSearchFields(
     item.notes,
     item.example,
     item.exampleReading,
+    item.exampleMeaning,
     item.onyomi,
     item.kunyomi,
     item.passageText,
