@@ -6,6 +6,9 @@ import { FormAlert } from '@/components/ui/FormAlert';
 import { PlaceholderCard } from '@/components/ui/PlaceholderCard';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { bulkDeleteKanjiItems, countKanjiItems, countTopics } from '@/lib/maintenance';
+import { upsertAppSettings } from '@/lib/db';
+import { ensureAppSettings } from '@/lib/settings';
+import type { AppSettings } from '@/types/appSettings';
 
 type CleanupCounts = {
   kanji: number;
@@ -18,6 +21,8 @@ export function SettingsPage() {
   const [isLoadingCount, setIsLoadingCount] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [feedback, setFeedback] = useState<{
     variant: 'success' | 'error';
     message: string;
@@ -33,12 +38,14 @@ export function SettingsPage() {
     void (async () => {
       setIsLoadingCount(true);
       try {
-        const [kanji, topics] = await Promise.all([
+        const [kanji, topics, loadedSettings] = await Promise.all([
           countKanjiItems(user.id),
           countTopics(user.id),
+          ensureAppSettings(user.id),
         ]);
         if (!cancelled) {
           setCounts({ kanji, topics });
+          setSettings(loadedSettings);
         }
       } catch (cause) {
         if (!cancelled) {
@@ -58,6 +65,27 @@ export function SettingsPage() {
       cancelled = true;
     };
   }, [user]);
+
+  async function handleNewItemsPerDayChange(value: number) {
+    if (!settings || Number.isNaN(value) || value < 0) {
+      return;
+    }
+
+    const updated: AppSettings = { ...settings, newItemsPerDay: value };
+    setSettings(updated);
+    setIsSavingSettings(true);
+
+    try {
+      await upsertAppSettings(updated);
+    } catch (cause) {
+      setFeedback({
+        variant: 'error',
+        message: cause instanceof Error ? cause.message : 'Failed to save settings',
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  }
 
   async function handleConfirmDelete() {
     if (!user) {
@@ -124,6 +152,28 @@ export function SettingsPage() {
               : '—'}
           </p>
         </PlaceholderCard>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Lessons pacing
+          </h2>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            How many brand-new items (kanji, vocabulary, grammar, ...) are introduced via
+            Lessons per day, before they enter your spaced-repetition reviews.
+          </p>
+          <label className="mt-3 flex items-center gap-3 text-sm">
+            <span className="text-slate-700 dark:text-slate-300">New items per day</span>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={settings?.newItemsPerDay ?? ''}
+              disabled={!settings || isSavingSettings}
+              onChange={(event) => void handleNewItemsPerDayChange(Number(event.target.value))}
+              className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800"
+            />
+          </label>
+        </section>
 
         <PlaceholderCard>
           Exam date, sync, and export settings will be added here.

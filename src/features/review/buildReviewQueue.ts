@@ -39,8 +39,15 @@ function toQueueEntry(
   return { item, progress, sortKey };
 }
 
+/**
+ * Only items that already have a user_progress row are "due" — brand-new
+ * items (no progress yet) are Lessons material, not reviews (see
+ * src/features/learn/lessonService.ts). A lesson must be completed first,
+ * which creates the initial progress row and makes the item due.
+ */
 function buildDueEntries(context: StudyContext, now: string): ReviewQueueEntry[] {
   const srsItems = context.items.filter((item) => isSrsItemType(item.type));
+  const itemsById = new Map(srsItems.map((item) => [item.id, item]));
   const entries: ReviewQueueEntry[] = [];
 
   for (const progress of context.userProgress) {
@@ -48,20 +55,12 @@ function buildDueEntries(context: StudyContext, now: string): ReviewQueueEntry[]
       continue;
     }
 
-    const item = srsItems.find((candidate) => candidate.id === progress.itemId);
+    const item = itemsById.get(progress.itemId);
     if (!item) {
       continue;
     }
 
     entries.push(toQueueEntry(item, progress, progress.nextReviewAt));
-  }
-
-  for (const item of srsItems) {
-    if (context.progressByItemId.has(item.id)) {
-      continue;
-    }
-
-    entries.push(toQueueEntry(item, null, now));
   }
 
   return entries.sort((left, right) => left.sortKey.localeCompare(right.sortKey));
@@ -92,7 +91,10 @@ function buildWeaknessEntries(context: StudyContext, now: string): ReviewQueueEn
     const itemIds = [...new Set(itemIdsByTopic.get(topicProgress.topicId) ?? [])];
     const candidates = itemIds
       .map((itemId) => context.itemsById.get(itemId))
-      .filter((item): item is LearningItem => item !== undefined && isSrsItemType(item.type))
+      .filter(
+        (item): item is LearningItem =>
+          item !== undefined && isSrsItemType(item.type) && context.progressByItemId.has(item.id),
+      )
       .sort(
         (left, right) =>
           weaknessPriority(context, left, now) - weaknessPriority(context, right, now),
@@ -115,7 +117,10 @@ function buildN5RecapEntries(context: StudyContext, limit: number, now: string):
   }
 
   const candidates = context.items
-    .filter((item) => isSrsItemType(item.type) && item.level === 'N5')
+    .filter(
+      (item) =>
+        isSrsItemType(item.type) && item.level === 'N5' && context.progressByItemId.has(item.id),
+    )
     .sort((left, right) => weaknessPriority(context, left, now) - weaknessPriority(context, right, now))
     .slice(0, limit);
 

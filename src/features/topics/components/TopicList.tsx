@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { routes } from '@/app/routes.config';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { Topic } from '@/types/topic';
@@ -59,7 +61,12 @@ export function TopicList({
         >
           <div className="min-w-0 space-y-0.5">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium text-slate-900 dark:text-slate-100">{topic.name}</p>
+              <Link
+                to={routes.topicDetail(topic.id)}
+                className="font-medium text-slate-900 hover:underline dark:text-slate-100"
+              >
+                {topic.name}
+              </Link>
               {progress?.needsAttention ? (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                   Needs attention

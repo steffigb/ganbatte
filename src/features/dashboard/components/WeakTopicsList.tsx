@@ -28,7 +28,12 @@ export function WeakTopicsList({ weakTopics }: WeakTopicsListProps) {
               className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800"
             >
               <div>
-                <p className="font-medium text-slate-900 dark:text-slate-100">{topic.name}</p>
+                <Link
+                  to={routes.topicDetail(topic.id)}
+                  className="font-medium text-slate-900 hover:underline dark:text-slate-100"
+                >
+                  {topic.name}
+                </Link>
                 <p className="text-slate-500 dark:text-slate-400">
                   {topic.level} · {topic.skill}
                 </p>

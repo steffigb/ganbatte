@@ -28,6 +28,12 @@ export function LearnBrowsePage() {
         </p>
       ) : (
         <div className="space-y-4">
+          <Link
+            to={routes.learnHub}
+            className="text-sm font-medium text-slate-600 underline dark:text-slate-400"
+          >
+            ← Learn overview
+          </Link>
           <div className="flex flex-wrap items-center gap-3">
             <div className="inline-flex rounded-lg border border-slate-200 p-1 dark:border-slate-700">
               {(['N4', 'N5'] as const).map((option) => (

@@ -7,7 +7,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 const navItems = [
   { to: routes.dashboard, label: 'Dashboard' },
   { to: routes.study, label: 'Study' },
-  { to: routes.learn('vocabulary'), label: 'Learn' },
+  { to: routes.practice, label: 'Practice' },
+  { to: routes.learnHub, label: 'Learn' },
   { to: routes.topics, label: 'Topics' },
   { to: routes.add, label: 'Add' },
   { to: routes.import, label: 'Import' },

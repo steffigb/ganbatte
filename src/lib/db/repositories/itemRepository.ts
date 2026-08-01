@@ -5,6 +5,7 @@ import {
   withTimestamps,
 } from '@/lib/db/repositories/helpers';
 import { enqueuePendingChange } from '@/lib/db/repositories/pendingChangesRepository';
+import { listItemTopicsByTopic } from '@/lib/db/repositories/itemTopicRepository';
 import type { ItemType, JlptLevel, Skill } from '@/types/domain';
 import type { LearningItem } from '@/types/learningItem';
 
@@ -31,6 +32,16 @@ export async function listItemsBySkill(
     .equals([userId, level, skill])
     .filter(isNotDeleted)
     .toArray();
+}
+
+export async function listItemsByTopic(topicId: string): Promise<LearningItem[]> {
+  const links = await listItemTopicsByTopic(topicId);
+  if (links.length === 0) {
+    return [];
+  }
+
+  const items = await db.learningItems.bulkGet(links.map((link) => link.itemId));
+  return items.filter((item): item is LearningItem => item !== undefined && isNotDeleted(item));
 }
 
 /**

@@ -4,6 +4,7 @@ import type { ItemDetail } from '@/features/items/itemDetailService';
 import { KanjiCompoundsList } from '@/features/items/components/KanjiCompoundsList';
 import { WordKanjiBreakdown } from '@/features/items/components/WordKanjiBreakdown';
 import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
+import { LogPracticeForm } from '@/features/activity/components/LogPracticeForm';
 import { cn } from '@/utils/cn';
 import { formatItemMeaning } from '@/utils/meaningText';
 import {
@@ -109,6 +110,24 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
         </>
       ) : null}
 
+      {item.type === 'reading' ? (
+        <>
+          {item.passageText ? (
+            <div className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100">
+              {item.passageText}
+            </div>
+          ) : null}
+          <LogPracticeForm skill="reading" itemId={item.id} topicId={topics[0]?.id} />
+        </>
+      ) : null}
+
+      {item.type === 'listening' ? (
+        <>
+          {item.audioUrl ? <audio controls className="w-full" src={item.audioUrl} /> : null}
+          <LogPracticeForm skill="listening" itemId={item.id} topicId={topics[0]?.id} />
+        </>
+      ) : null}
+
       {item.notes ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">{item.notes}</p>
       ) : null}
@@ -116,8 +135,18 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
       {topics.length > 0 ? (
         <div className="space-y-1">
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Topics</p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {topics.map((topic) => topic.name).join(', ')}
+          <p className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+            {topics.map((topic, index) => (
+              <span key={topic.id}>
+                <Link
+                  to={routes.topicDetail(topic.id)}
+                  className="font-medium text-slate-900 underline dark:text-slate-100"
+                >
+                  {topic.name}
+                </Link>
+                {index < topics.length - 1 ? ',' : null}
+              </span>
+            ))}
           </p>
         </div>
       ) : null}

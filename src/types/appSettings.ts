@@ -6,6 +6,8 @@ export interface AppSettings extends Timestamps, UserOwned {
   examDate: string;
   dailyGoalMinutes: number;
   n5RecapRatio: number;
+  /** Max number of brand-new items introduced via Lessons per day. */
+  newItemsPerDay: number;
   locale: string;
   theme: Theme;
 }
