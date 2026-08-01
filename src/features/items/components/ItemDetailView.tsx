@@ -6,14 +6,44 @@ import { WordKanjiBreakdown } from '@/features/items/components/WordKanjiBreakdo
 import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
 import { cn } from '@/utils/cn';
 import { formatItemMeaning } from '@/utils/meaningText';
+import {
+  partOfSpeechLabel,
+  transitivityLabel,
+  verbTypeLabel,
+} from '@/utils/wordClassLabels';
 
 type ItemDetailViewProps = {
   detail: ItemDetail;
   userId: string;
 };
 
+function WordClassBadges({ item }: { item: ItemDetail['item'] }) {
+  const badges = [
+    partOfSpeechLabel(item.partOfSpeech),
+    verbTypeLabel(item.verbType),
+    transitivityLabel(item.transitivity),
+  ].filter((label): label is string => Boolean(label));
+
+  if (badges.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {badges.map((label) => (
+        <span
+          key={label}
+          className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        >
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
-  const { item, topics, sources } = detail;
+  const { item, topics, sources, pairedItem } = detail;
 
   return (
     <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
@@ -52,6 +82,18 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
 
       {item.type === 'expression' ? (
         <>
+          <WordClassBadges item={item} />
+          {pairedItem ? (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Paired verb:{' '}
+              <Link
+                to={routes.itemDetail(pairedItem.id)}
+                className="font-medium text-slate-900 underline dark:text-slate-100"
+              >
+                {pairedItem.japanese}
+              </Link>
+            </p>
+          ) : null}
           {item.example ? (
             <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
               <p className="text-slate-900 dark:text-slate-100">{item.example}</p>

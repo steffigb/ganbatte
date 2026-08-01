@@ -36,6 +36,56 @@ export function SearchFiltersPanel({
       />
 
       <Select
+        id="search-part-of-speech"
+        label="Part of speech"
+        value={filters.partOfSpeech}
+        onChange={(event) =>
+          onFilterChange('partOfSpeech', event.target.value as SearchFilters['partOfSpeech'])
+        }
+        options={[
+          { value: 'all', label: 'All word classes' },
+          { value: 'noun', label: 'Noun' },
+          { value: 'verb', label: 'Verb' },
+          { value: 'i-adjective', label: 'い-adjective' },
+          { value: 'na-adjective', label: 'な-adjective' },
+          { value: 'adverb', label: 'Adverb' },
+          { value: 'particle', label: 'Particle' },
+          { value: 'conjunction', label: 'Conjunction' },
+          { value: 'other', label: 'Other' },
+        ]}
+      />
+
+      <Select
+        id="search-verb-type"
+        label="Verb type"
+        value={filters.verbType}
+        onChange={(event) =>
+          onFilterChange('verbType', event.target.value as SearchFilters['verbType'])
+        }
+        options={[
+          { value: 'all', label: 'All verb types' },
+          { value: 'godan', label: 'Godan' },
+          { value: 'ichidan', label: 'Ichidan' },
+          { value: 'irregular', label: 'Irregular' },
+        ]}
+      />
+
+      <Select
+        id="search-transitivity"
+        label="Transitivity"
+        value={filters.transitivity}
+        onChange={(event) =>
+          onFilterChange('transitivity', event.target.value as SearchFilters['transitivity'])
+        }
+        options={[
+          { value: 'all', label: 'Transitive + intransitive' },
+          { value: 'transitive', label: 'Transitive' },
+          { value: 'intransitive', label: 'Intransitive' },
+          { value: 'both', label: 'Both' },
+        ]}
+      />
+
+      <Select
         id="search-level"
         label="Level"
         value={filters.level}

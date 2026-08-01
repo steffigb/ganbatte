@@ -1,4 +1,12 @@
-import type { ItemType, JlptLevel, ReadingStatus, Skill } from '@/types/domain';
+import type {
+  ItemType,
+  JlptLevel,
+  PartOfSpeech,
+  ReadingStatus,
+  Skill,
+  Transitivity,
+  VerbType,
+} from '@/types/domain';
 import type { SoftDeletable, Timestamps, UserOwned } from '@/types/common';
 
 export interface Question {
@@ -21,6 +29,13 @@ export interface LearningItem extends Timestamps, SoftDeletable, UserOwned {
   exampleReading?: string;
   exampleMeaning?: string;
   notes?: string;
+  /** Word class — expression items only (§8.4 PartOfSpeech / verb classification). */
+  partOfSpeech?: PartOfSpeech;
+  verbType?: VerbType;
+  transitivity?: Transitivity;
+  /** Counterpart verb (e.g. 開く ↔ 開ける). Only one side needs to store this —
+   * the other direction is resolved live via `findPairedItem()`. */
+  pairedItemId?: string;
   onyomi?: string;
   onyomiStatus?: ReadingStatus;
   kunyomi?: string;

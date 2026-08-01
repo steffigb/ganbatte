@@ -3,6 +3,7 @@ import {
   deleteItemTopic,
   findItemByJapanese,
   findItemTopicLink,
+  findPairedItem,
   getItemById,
   getSourceById,
   listItemSourcesByItem,
@@ -43,6 +44,8 @@ export async function loadItemFormValues(
     }
   }
 
+  const pairedItem = item.pairedItemId ? await findPairedItem(item.userId, item) : undefined;
+
   return {
     id: item.id,
     type: item.type,
@@ -55,6 +58,14 @@ export async function loadItemFormValues(
     sourceIds: sourceLinks.map((link) => link.sourceId),
     sourceReferences,
     ...(item.type === 'kanji' ? kanjiReadingFieldsFromItem(item) : {}),
+    ...(item.type === 'expression'
+      ? {
+          partOfSpeech: item.partOfSpeech ?? '',
+          verbType: item.verbType ?? '',
+          transitivity: item.transitivity ?? '',
+          pairedWithJapanese: pairedItem?.japanese ?? '',
+        }
+      : {}),
   };
 }
 
@@ -195,6 +206,24 @@ export async function saveItemWithRelations(
       onyomiStatus: onyomi.status,
       kunyomi: kunyomi.value,
       kunyomiStatus: kunyomi.status,
+    };
+  } else if (values.type === 'expression') {
+    const pairedWithJapanese = values.pairedWithJapanese?.trim();
+    const pairedItem = pairedWithJapanese
+      ? await findItemByJapanese(userId, 'expression', pairedWithJapanese)
+      : undefined;
+
+    if (pairedWithJapanese && !pairedItem) {
+      throw new Error(`No expression item found for paired verb "${pairedWithJapanese}"`);
+    }
+
+    item = {
+      ...baseItem,
+      reading: values.reading?.trim() || undefined,
+      partOfSpeech: values.partOfSpeech || undefined,
+      verbType: values.verbType || undefined,
+      transitivity: values.transitivity || undefined,
+      pairedItemId: pairedItem?.id,
     };
   } else {
     item = {

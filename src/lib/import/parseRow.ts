@@ -3,9 +3,12 @@ import {
   parseItemType,
   parseLevel,
   parseMeaningFields,
+  parsePartOfSpeech,
   parseSkill,
   parseTags,
   parseTopicNames,
+  parseTransitivity,
+  parseVerbType,
 } from '@/lib/import/normalizeField';
 import type { ImportFieldKey, ParsedImportRow } from '@/lib/import/types';
 import { parseImportReadingCell } from '@/utils/kanjiReading';
@@ -79,6 +82,20 @@ export function parseImportRow(
         onyomiStatus: onyomi.status,
         kunyomi: kunyomi.value,
         kunyomiStatus: kunyomi.status,
+      },
+    };
+  }
+
+  if (type === 'expression') {
+    return {
+      ok: true,
+      data: {
+        ...base,
+        reading: getCellValue(raw, columnMap, 'reading'),
+        partOfSpeech: parsePartOfSpeech(getCellValue(raw, columnMap, 'part_of_speech')),
+        verbType: parseVerbType(getCellValue(raw, columnMap, 'verb_type')),
+        transitivity: parseTransitivity(getCellValue(raw, columnMap, 'transitivity')),
+        pairedWithJapanese: getCellValue(raw, columnMap, 'paired_with'),
       },
     };
   }

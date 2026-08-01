@@ -9,6 +9,23 @@ export type Skill =
 
 export type ItemType = 'expression' | 'kanji' | 'grammar' | 'reading' | 'listening';
 
+/** Grammatical word class — only meaningful for `type: "expression"` items. */
+export type PartOfSpeech =
+  | 'noun'
+  | 'verb'
+  | 'i-adjective'
+  | 'na-adjective'
+  | 'adverb'
+  | 'particle'
+  | 'conjunction'
+  | 'other';
+
+/** Verb conjugation group — only set when `partOfSpeech === 'verb'`. */
+export type VerbType = 'godan' | 'ichidan' | 'irregular';
+
+/** Only set when `partOfSpeech === 'verb'`. */
+export type Transitivity = 'transitive' | 'intransitive' | 'both';
+
 /** Kanji reading field: unset = not entered, none = confirmed absent, set = has value. */
 export type ReadingStatus = 'unset' | 'none' | 'set';
 

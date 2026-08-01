@@ -1,8 +1,14 @@
 import type { LearningItem } from '@/types/learningItem';
 import { cn } from '@/utils/cn';
 import { formatItemMeaning } from '@/utils/meaningText';
+import {
+  partOfSpeechLabel,
+  transitivityLabel,
+  verbTypeLabel,
+} from '@/utils/wordClassLabels';
 import { useAuth } from '@/features/auth';
 import { KanjiCompoundsList } from '@/features/items/components/KanjiCompoundsList';
+import { PairedVerbHint } from '@/features/items/components/PairedVerbHint';
 import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
 
 type ReviewCardProps = {
@@ -16,6 +22,31 @@ function ItemMeta({ item }: { item: LearningItem }) {
     <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
       {item.level} · {item.type}
     </p>
+  );
+}
+
+function WordClassBadges({ item }: { item: LearningItem }) {
+  const badges = [
+    partOfSpeechLabel(item.partOfSpeech),
+    verbTypeLabel(item.verbType),
+    transitivityLabel(item.transitivity),
+  ].filter((label): label is string => Boolean(label));
+
+  if (badges.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap justify-center gap-2">
+      {badges.map((label) => (
+        <span
+          key={label}
+          className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        >
+          {label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -77,7 +108,13 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
               ) : null}
             </>
           ) : (
-            <ExampleSentence item={item} />
+            <>
+              {item.type === 'expression' ? <WordClassBadges item={item} /> : null}
+              <ExampleSentence item={item} />
+              {item.type === 'expression' && user ? (
+                <PairedVerbHint userId={user.id} item={item} />
+              ) : null}
+            </>
           )}
           {item.notes ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">{item.notes}</p>

@@ -1,4 +1,6 @@
-type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes
-expression,N4,vocabulary,"transport,verbs",電車,でんしゃ,Zug,電車に乗ります,でんしゃにのります,I ride the train,Try! N4,Unit 3,n4-core,
-expression,N4,vocabulary,daily-life,食べる,たべる,essen,ご飯を食べます,ごはんをたべます,I eat rice/a meal,Genki I,Lektion 3,,
-expression,N5,vocabulary,greetings,こんにちは,こんにちは,Hallo,こんにちは、元気ですか。,こんにちは、げんきですか。,"Hello, how are you?",,,,
+type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,part_of_speech,verb_type,transitivity,paired_with,source,source_ref,tags,notes
+expression,N4,vocabulary,"transport,verbs",電車,でんしゃ,Zug,電車に乗ります,でんしゃにのります,I ride the train,noun,,,,Try! N4,Unit 3,n4-core,
+expression,N4,vocabulary,daily-life,食べる,たべる,essen,ご飯を食べます,ごはんをたべます,I eat rice/a meal,verb,ichidan,transitive,,Genki I,Lektion 3,,
+expression,N5,vocabulary,greetings,こんにちは,こんにちは,Hallo,こんにちは、元気ですか。,こんにちは、げんきですか。,"Hello, how are you?",other,,,,,,,
+expression,N4,vocabulary,daily-life,開く,あく,to open (by itself),ドアが開きます,ドアがあきます,The door opens,verb,godan,intransitive,開ける,,,n4-core,
+expression,N4,vocabulary,daily-life,開ける,あける,to open (something),ドアを開けます,ドアをあけます,I open the door,verb,ichidan,transitive,開く,,,n4-core,

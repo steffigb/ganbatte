@@ -2,6 +2,7 @@ import {
   findItemByJapanese,
   findItemSourceLink,
   findItemTopicLink,
+  getItemById,
   listTopicsBySkill,
   upsertImportBatch,
   upsertItem,
@@ -26,6 +27,39 @@ import { createId } from '@/utils/id';
 
 function mergeTags(existing: string[], incoming: string[]): string[] {
   return [...new Set([...existing, ...incoming])];
+}
+
+async function resolvePairedVerbs(
+  userId: string,
+  preview: ImportPreview,
+  itemIdByKey: Map<string, string>,
+): Promise<void> {
+  for (const previewRow of preview.rows) {
+    const row = previewRow.data;
+    if (!row || row.type !== 'expression' || !row.pairedWithJapanese) {
+      continue;
+    }
+
+    const itemId = itemIdByKey.get(itemDuplicateKey(row.type, row.japanese));
+    if (!itemId) {
+      continue;
+    }
+
+    const pairedId =
+      itemIdByKey.get(itemDuplicateKey('expression', row.pairedWithJapanese)) ??
+      (await findItemByJapanese(userId, 'expression', row.pairedWithJapanese))?.id;
+
+    if (!pairedId || pairedId === itemId) {
+      continue;
+    }
+
+    const item = await getItemById(itemId);
+    if (!item || item.pairedItemId === pairedId) {
+      continue;
+    }
+
+    await upsertItem({ ...item, pairedItemId: pairedId });
+  }
 }
 
 function topicCacheKey(level: JlptLevel, skill: Skill, name: string): string {
@@ -228,6 +262,16 @@ function buildLearningItem(
     };
   }
 
+  if (row.type === 'expression') {
+    return {
+      ...base,
+      reading: row.reading,
+      partOfSpeech: row.partOfSpeech,
+      verbType: row.verbType,
+      transitivity: row.transitivity,
+    };
+  }
+
   return {
     ...base,
     reading: row.reading,
@@ -357,6 +401,8 @@ export async function executeImport(
       });
     }
   }
+
+  await resolvePairedVerbs(userId, preview, itemIdByKey);
 
   const errorCount = errors.length;
 

@@ -1,5 +1,13 @@
 import type { ImportError } from '@/types/importBatch';
-import type { ItemType, JlptLevel, ReadingStatus, Skill } from '@/types/domain';
+import type {
+  ItemType,
+  JlptLevel,
+  PartOfSpeech,
+  ReadingStatus,
+  Skill,
+  Transitivity,
+  VerbType,
+} from '@/types/domain';
 
 export type ImportFieldKey =
   | 'type'
@@ -15,6 +23,10 @@ export type ImportFieldKey =
   | 'example'
   | 'example_reading'
   | 'example_meaning'
+  | 'part_of_speech'
+  | 'verb_type'
+  | 'transitivity'
+  | 'paired_with'
   | 'source'
   | 'source_ref'
   | 'tags'
@@ -51,6 +63,10 @@ export type ParsedImportRow = {
   exampleReading?: string;
   exampleMeaning?: string;
   notes?: string;
+  partOfSpeech?: PartOfSpeech;
+  verbType?: VerbType;
+  transitivity?: Transitivity;
+  pairedWithJapanese?: string;
   topicNames: string[];
   tags: string[];
   sourceLabel?: string;

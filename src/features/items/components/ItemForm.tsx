@@ -13,7 +13,13 @@ import type { SaveFeedback } from '@/features/items/hooks/useItemForm';
 import { KanjiReadingField } from '@/features/items/components/KanjiReadingField';
 import { useSources } from '@/features/sources';
 import { useTopics } from '@/features/topics';
-import type { ItemType, JlptLevel } from '@/types/domain';
+import type {
+  ItemType,
+  JlptLevel,
+  PartOfSpeech,
+  Transitivity,
+  VerbType,
+} from '@/types/domain';
 import type { KanjiReadingFieldInput } from '@/utils/kanjiReading';
 
 const typeOptions = [
@@ -27,6 +33,32 @@ const typeOptions = [
 const levelOptions = [
   { value: 'N4', label: 'N4' },
   { value: 'N5', label: 'N5' },
+];
+
+const partOfSpeechOptions = [
+  { value: '', label: 'Not set' },
+  { value: 'noun', label: 'Noun' },
+  { value: 'verb', label: 'Verb' },
+  { value: 'i-adjective', label: 'い-adjective' },
+  { value: 'na-adjective', label: 'な-adjective' },
+  { value: 'adverb', label: 'Adverb' },
+  { value: 'particle', label: 'Particle' },
+  { value: 'conjunction', label: 'Conjunction' },
+  { value: 'other', label: 'Other' },
+];
+
+const verbTypeOptions = [
+  { value: '', label: 'Not set' },
+  { value: 'godan', label: 'Godan (五段)' },
+  { value: 'ichidan', label: 'Ichidan (一段)' },
+  { value: 'irregular', label: 'Irregular (する/来る)' },
+];
+
+const transitivityOptions = [
+  { value: '', label: 'Not set' },
+  { value: 'transitive', label: 'Transitive (他動詞)' },
+  { value: 'intransitive', label: 'Intransitive (自動詞)' },
+  { value: 'both', label: 'Both' },
 ];
 
 type ItemFormFieldsProps = {
@@ -63,6 +95,16 @@ function ItemFormFields({
   const [kunyomiField, setKunyomiField] = useState<KanjiReadingFieldInput>(
     initialValues.kunyomi ?? createBlankKanjiReadingFields().kunyomi!,
   );
+  const [partOfSpeech, setPartOfSpeech] = useState<PartOfSpeech | ''>(
+    initialValues.partOfSpeech ?? '',
+  );
+  const [verbType, setVerbType] = useState<VerbType | ''>(initialValues.verbType ?? '');
+  const [transitivity, setTransitivity] = useState<Transitivity | ''>(
+    initialValues.transitivity ?? '',
+  );
+  const [pairedWithJapanese, setPairedWithJapanese] = useState(
+    initialValues.pairedWithJapanese ?? '',
+  );
 
   function handleTypeChange(nextType: ItemType) {
     if (nextType === 'kanji' && type !== 'kanji') {
@@ -71,6 +113,15 @@ function ItemFormFields({
       setKunyomiField(blanks.kunyomi!);
     }
     setType(nextType);
+  }
+
+  function handlePartOfSpeechChange(next: PartOfSpeech | '') {
+    if (next !== 'verb') {
+      setVerbType('');
+      setTransitivity('');
+      setPairedWithJapanese('');
+    }
+    setPartOfSpeech(next);
   }
 
   function toggleTopic(topicId: string) {
@@ -121,6 +172,14 @@ function ItemFormFields({
         ? {
             onyomi: onyomiField,
             kunyomi: kunyomiField,
+          }
+        : {}),
+      ...(type === 'expression'
+        ? {
+            partOfSpeech: partOfSpeech || undefined,
+            verbType: verbType || undefined,
+            transitivity: transitivity || undefined,
+            pairedWithJapanese: pairedWithJapanese.trim() || undefined,
           }
         : {}),
     });
@@ -182,6 +241,53 @@ function ItemFormFields({
           onChange={(event) => setReading(event.target.value)}
         />
       )}
+      {type === 'expression' ? (
+        <div className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Word class (optional)
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              id="item-part-of-speech"
+              label="Part of speech"
+              value={partOfSpeech}
+              options={partOfSpeechOptions}
+              onChange={(event) =>
+                handlePartOfSpeechChange(event.target.value as PartOfSpeech | '')
+              }
+            />
+            {partOfSpeech === 'verb' ? (
+              <Select
+                id="item-verb-type"
+                label="Verb type"
+                value={verbType}
+                options={verbTypeOptions}
+                onChange={(event) => setVerbType(event.target.value as VerbType | '')}
+              />
+            ) : null}
+          </div>
+          {partOfSpeech === 'verb' ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                id="item-transitivity"
+                label="Transitivity"
+                value={transitivity}
+                options={transitivityOptions}
+                onChange={(event) =>
+                  setTransitivity(event.target.value as Transitivity | '')
+                }
+              />
+              <Input
+                id="item-paired-with"
+                label="Paired verb (optional)"
+                placeholder="e.g. 開ける"
+                value={pairedWithJapanese}
+                onChange={(event) => setPairedWithJapanese(event.target.value)}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <Input
         id="item-meaning"
         label="Meaning (English)"

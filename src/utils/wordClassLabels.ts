@@ -1,0 +1,36 @@
+import type { PartOfSpeech, Transitivity, VerbType } from '@/types/domain';
+
+const PART_OF_SPEECH_LABELS: Record<PartOfSpeech, string> = {
+  noun: 'Noun',
+  verb: 'Verb',
+  'i-adjective': 'い-adjective',
+  'na-adjective': 'な-adjective',
+  adverb: 'Adverb',
+  particle: 'Particle',
+  conjunction: 'Conjunction',
+  other: 'Other',
+};
+
+const VERB_TYPE_LABELS: Record<VerbType, string> = {
+  godan: 'Godan',
+  ichidan: 'Ichidan',
+  irregular: 'Irregular',
+};
+
+const TRANSITIVITY_LABELS: Record<Transitivity, string> = {
+  transitive: 'Transitive',
+  intransitive: 'Intransitive',
+  both: 'Both',
+};
+
+export function partOfSpeechLabel(value?: PartOfSpeech): string | undefined {
+  return value ? PART_OF_SPEECH_LABELS[value] : undefined;
+}
+
+export function verbTypeLabel(value?: VerbType): string | undefined {
+  return value ? VERB_TYPE_LABELS[value] : undefined;
+}
+
+export function transitivityLabel(value?: Transitivity): string | undefined {
+  return value ? TRANSITIVITY_LABELS[value] : undefined;
+}

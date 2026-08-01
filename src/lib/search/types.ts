@@ -1,4 +1,12 @@
-import type { ItemType, JlptLevel, MasteryLevel, Skill } from '@/types/domain';
+import type {
+  ItemType,
+  JlptLevel,
+  MasteryLevel,
+  PartOfSpeech,
+  Skill,
+  Transitivity,
+  VerbType,
+} from '@/types/domain';
 import type { LearningItem } from '@/types/learningItem';
 import type { Topic } from '@/types/topic';
 
@@ -13,12 +21,18 @@ export type SearchTypeFilter = 'all' | ItemType;
 export type SearchLevelFilter = 'all' | JlptLevel;
 export type SearchSkillFilter = 'all' | Skill;
 export type SearchMasteryFilter = 'all' | MasteryLevel | 'new';
+export type SearchPartOfSpeechFilter = 'all' | PartOfSpeech;
+export type SearchVerbTypeFilter = 'all' | VerbType;
+export type SearchTransitivityFilter = 'all' | Transitivity;
 
 export type SearchFilters = {
   type: SearchTypeFilter;
   level: SearchLevelFilter;
   skill: SearchSkillFilter;
   mastery: SearchMasteryFilter;
+  partOfSpeech: SearchPartOfSpeechFilter;
+  verbType: SearchVerbTypeFilter;
+  transitivity: SearchTransitivityFilter;
   weakOnly: boolean;
 };
 
@@ -27,6 +41,9 @@ export const defaultSearchFilters: SearchFilters = {
   level: 'all',
   skill: 'all',
   mastery: 'all',
+  partOfSpeech: 'all',
+  verbType: 'all',
+  transitivity: 'all',
   weakOnly: false,
 };
 

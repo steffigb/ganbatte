@@ -1,4 +1,11 @@
-import type { ItemType, JlptLevel, ReadingStatus } from '@/types/domain';
+import type {
+  ItemType,
+  JlptLevel,
+  PartOfSpeech,
+  ReadingStatus,
+  Transitivity,
+  VerbType,
+} from '@/types/domain';
 import type { KanjiReadingFieldInput } from '@/utils/kanjiReading';
 import { kanjiReadingFieldFromItem } from '@/utils/kanjiReading';
 
@@ -16,6 +23,12 @@ export type ItemFormValues = {
   /** Kanji-only reading fields (tri-state). */
   onyomi?: KanjiReadingFieldInput;
   kunyomi?: KanjiReadingFieldInput;
+  /** Expression-only word-class fields. */
+  partOfSpeech?: PartOfSpeech | '';
+  verbType?: VerbType | '';
+  transitivity?: Transitivity | '';
+  /** Japanese text of the paired verb; resolved to `pairedItemId` on save. */
+  pairedWithJapanese?: string;
 };
 
 export const DEFAULT_ITEM_FORM_TYPE_LEVEL: Pick<ItemFormValues, 'type' | 'level'> = {

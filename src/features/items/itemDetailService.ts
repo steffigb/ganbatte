@@ -1,4 +1,5 @@
 import {
+  findPairedItem,
   getItemById,
   getSourceById,
   getTopicById,
@@ -13,6 +14,7 @@ export type ItemDetail = {
   item: LearningItem;
   topics: Topic[];
   sources: { source: Source; reference?: string }[];
+  pairedItem?: LearningItem;
 };
 
 export async function loadItemDetail(itemId: string): Promise<ItemDetail | undefined> {
@@ -21,9 +23,10 @@ export async function loadItemDetail(itemId: string): Promise<ItemDetail | undef
     return undefined;
   }
 
-  const [topicLinks, sourceLinks] = await Promise.all([
+  const [topicLinks, sourceLinks, pairedItem] = await Promise.all([
     listItemTopicsByItem(itemId),
     listItemSourcesByItem(itemId),
+    item.type === 'expression' ? findPairedItem(item.userId, item) : Promise.resolve(undefined),
   ]);
 
   const topics = (
@@ -40,5 +43,5 @@ export async function loadItemDetail(itemId: string): Promise<ItemDetail | undef
     (entry) => entry !== undefined,
   );
 
-  return { item, topics, sources };
+  return { item, topics, sources, pairedItem };
 }

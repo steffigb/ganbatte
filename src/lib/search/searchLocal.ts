@@ -62,8 +62,25 @@ function matchesTypeFilter(filters: SearchFilters, type: ItemType): boolean {
   return filters.type === 'all' || filters.type === type;
 }
 
+function matchesPartOfSpeechFilter(filters: SearchFilters, item: LearningItem): boolean {
+  return filters.partOfSpeech === 'all' || filters.partOfSpeech === item.partOfSpeech;
+}
+
+function matchesVerbTypeFilter(filters: SearchFilters, item: LearningItem): boolean {
+  return filters.verbType === 'all' || filters.verbType === item.verbType;
+}
+
+function matchesTransitivityFilter(filters: SearchFilters, item: LearningItem): boolean {
+  return filters.transitivity === 'all' || filters.transitivity === item.transitivity;
+}
+
 function matchesTopicTypeFilter(filters: SearchFilters): boolean {
-  return filters.type === 'all';
+  return (
+    filters.type === 'all' &&
+    filters.partOfSpeech === 'all' &&
+    filters.verbType === 'all' &&
+    filters.transitivity === 'all'
+  );
 }
 
 function matchesLevelFilter<T extends { level: string }>(
@@ -191,6 +208,18 @@ export function searchLocal(input: SearchLocalInput): SearchResults {
     }
 
     if (!matchesSkillFilter(input.filters, item)) {
+      continue;
+    }
+
+    if (!matchesPartOfSpeechFilter(input.filters, item)) {
+      continue;
+    }
+
+    if (!matchesVerbTypeFilter(input.filters, item)) {
+      continue;
+    }
+
+    if (!matchesTransitivityFilter(input.filters, item)) {
       continue;
     }
 

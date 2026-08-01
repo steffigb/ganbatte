@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-07-31 (`type: "word"` renamed to `"expression"`; `exampleMeaning` field added; both migrations pending owner `supabase db push`)  
+> **Last updated:** 2026-08-01 (word-class metadata + verb pairs added for expressions; three migrations pending owner `supabase db push`)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,7 +12,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` + `kanji_reading_status` applied; migration history repaired; **`rename_word_to_expression` + `example_meaning` pending `supabase db push`** |
+| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` + `kanji_reading_status` applied; migration history repaired; **`rename_word_to_expression` + `example_meaning` + `word_class_and_verb_pairs` pending `supabase db push`** |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
@@ -29,6 +29,7 @@
 - [ ] Remote schema (pending `supabase db push`, **owner only**):
   - `20260731210000_rename_word_to_expression.sql` — `learning_items.type` value `'word'` → `'expression'`
   - `20260731220000_example_meaning.sql` — adds `example_meaning` (English translation of `example`) to `learning_items`
+  - `20260801000000_word_class_and_verb_pairs.sql` — adds `part_of_speech`, `verb_type`, `transitivity`, `paired_item_id` (+ index) to `learning_items` (ADR-016)
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -73,11 +74,12 @@
 - [x] **Compounds as vocabulary** — compound words (e.g. `一時`) are imported/created as ordinary `expression` `LearningItem`s with their own SRS; the kanji ↔ compound relationship is *derived live* by text search (`findVocabularyItemsContainingKanji`, `findKanjiItemsByCharacters`), never stored in a junction table
 - [x] **`type: "word"` renamed to `"expression"`** (2026-07-31) — vocabulary entries are often multi-word (verbs, set phrases, e.g. お腹が空く), not single dictionary words; migration `20260731210000_rename_word_to_expression.sql`
 - [x] **`exampleMeaning` field** (2026-07-31) — English translation of an item's own `example` sentence; optional, alongside `example`/`exampleReading`; shown on review card back and item detail page; migration `20260731220000_example_meaning.sql`
+- [x] **Word-class metadata + verb pairs** (2026-08-01) — `partOfSpeech`, `verbType`, `transitivity` on `expression` items; optional `pairedItemId` links a verb to its transitive/intransitive counterpart (e.g. 開く ↔ 開ける), resolved live in both directions via `findPairedItem()`; form UI, CSV import (`part_of_speech`/`verb_type`/`transitivity`/`paired_with`), search filters, review card + item detail display; migration `20260801000000_word_class_and_verb_pairs.sql` (ADR-016)
 - [x] **Item detail page** — `/items/:id` read-only view; shows compounds for kanji (`KanjiCompoundsList`), component kanji for words (`WordKanjiBreakdown`)
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply `20260731210000_rename_word_to_expression.sql` and `20260731220000_example_meaning.sql`
+- [ ] Owner: `supabase db push` — apply `20260731210000_rename_word_to_expression.sql`, `20260731220000_example_meaning.sql`, and `20260801000000_word_class_and_verb_pairs.sql`
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -266,6 +268,20 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 **Alternatives considered:** Boolean “has reading” flags (rejected: cannot distinguish unset vs confirmed none); single combined reading string (rejected: loses on/kun distinction).
 
 **Migration:** `20260720230000_kanji_reading_status.sql` adds `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`). Owner applies via `supabase db push` (ADR-013).
+
+### ADR-016: Word-class metadata for expressions; verb pairs derived, not dual-stored
+
+**Decision (2026-08-01):** `expression` items carry optional grammatical metadata: `partOfSpeech` (noun, verb, い-adjective, な-adjective, adverb, particle, conjunction, other), and — only when `partOfSpeech === 'verb'` — `verbType` (godan, ichidan, irregular) and `transitivity` (transitive, intransitive, both). Kanji/grammar/reading/listening items never set these fields.
+
+**Rationale:** Verb group and transitivity are testable JLPT N4/N5 knowledge (e.g. 開く/開ける pairs), not just organizational tags. Structured, validated fields enable real filtering (`/search`) and future features (conjugation drills, dashboard breakdown by word class) that free-text `tags` cannot support reliably.
+
+**Verb pairs (`pairedItemId`):** A transitive verb can optionally link to its intransitive counterpart (or vice versa) via `pairedItemId`, a self-referential FK on `learning_items` (`ON DELETE SET NULL`). Only **one side** needs to store the link — the reverse direction is resolved live via `findPairedItem()` (`src/lib/db/repositories/pairedItemLookup.ts`), matching the existing kanji ↔ compound pattern of deriving relationships instead of duplicating them on both rows.
+
+**Form/import:** Manual form — a "Paired verb" text input (Japanese text), resolved to `pairedItemId` via `findItemByJapanese()` on save; only shown when `partOfSpeech === 'verb'`. CSV import — `paired_with` column (Japanese text of the counterpart), resolved in a post-pass after all rows in the batch are created/updated (`resolvePairedVerbs()` in `executeImport.ts`), so pairs can reference each other regardless of row order in the file.
+
+**Migration:** `20260801000000_word_class_and_verb_pairs.sql` adds `part_of_speech`, `verb_type`, `transitivity`, `paired_item_id` (+ index) to `learning_items`. Owner applies via `supabase db push` (ADR-013).
+
+**Rejected:** Free-text `tags` only (rejected as primary storage — not validated, not reliably filterable, mixes with topic/source tags already used for other purposes). Storing the pair link on both rows symmetrically (rejected — extra write complexity for no benefit, since live reverse lookup is cheap and always consistent).
 
 ---
 
@@ -493,6 +509,12 @@ LearningItem {
   exampleMeaning?: string         // English translation of `example` (optional)
   notes?: string
 
+  // Expression-only word-class metadata (§8.4.4, ADR-016)
+  partOfSpeech?: "noun" | "verb" | "i-adjective" | "na-adjective" | "adverb" | "particle" | "conjunction" | "other"
+  verbType?: "godan" | "ichidan" | "irregular"           // only when partOfSpeech === "verb"
+  transitivity?: "transitive" | "intransitive" | "both"  // only when partOfSpeech === "verb"
+  pairedItemId?: string            // counterpart verb (e.g. 開く <-> 開ける); one side only, reverse resolved live
+
   // Kanji-specific — onyomi/kunyomi only, no standalone reading (see ADR-015)
   onyomi?: string
   kunyomi?: string
@@ -552,6 +574,23 @@ Compound words (e.g. `一時`) are plain `expression` `LearningItem`s with their
 | Helpers | `src/utils/meaningText.ts` — `splitMeaningParts`, `normalizeMeaningText`, `formatItemMeaning` |
 
 Example: `passage (of people or vehicles) / passing (through) / traffic` → `passage (of people or vehicles) · passing (through) · traffic`
+
+### 8.4.4 Word-class metadata & verb pairs (implemented, ADR-016)
+
+| Field | Meaning | Applies to |
+|-------|---------|-----------|
+| `partOfSpeech` | noun / verb / い-adjective / な-adjective / adverb / particle / conjunction / other | `expression` items only |
+| `verbType` | godan / ichidan / irregular | only when `partOfSpeech === 'verb'` |
+| `transitivity` | transitive / intransitive / both | only when `partOfSpeech === 'verb'` |
+| `pairedItemId` | counterpart verb id (e.g. 開く ↔ 開ける) | only when `partOfSpeech === 'verb'`; optional |
+
+**Verb pairs are one-directional in storage, bidirectional in display:** only one verb needs `pairedItemId` set — `findPairedItem(userId, item)` (`src/lib/db/repositories/pairedItemLookup.ts`) checks the item's own `pairedItemId` first, then falls back to a reverse query (any other item whose `pairedItemId` points back to this one). This mirrors the kanji ↔ compound relationship (§8.4.2) — derive instead of duplicating a back-reference.
+
+**Form:** `ItemForm` shows a "Word class" section only for `type: "expression"`; verb type / transitivity / paired-verb fields only appear when part of speech is "Verb". The paired-verb field takes Japanese text, resolved to `pairedItemId` via `findItemByJapanese()` on save.
+
+**Import:** CSV columns `part_of_speech`, `verb_type`, `transitivity`, `paired_with` (Japanese text of the counterpart) — see §12.2. Pairs are resolved in a post-pass after all rows are created/updated, so either verb in a pair can come first in the file.
+
+**Search:** `/search` filters by part of speech, verb type, and transitivity (§13).
 
 ### 8.5 ItemSource
 
@@ -700,6 +739,7 @@ sources
 learning_items          -- incl. onyomi_status, kunyomi_status only (migration 20260720230000); no reading_status
                         -- type value 'word' renamed to 'expression' (migration 20260731210000)
                         -- incl. example_meaning (migration 20260731220000)
+                        -- incl. part_of_speech, verb_type, transitivity, paired_item_id (migration 20260801000000)
 item_sources
 item_topics          -- optional junction: item_id ↔ topic_id
 reviews
@@ -801,6 +841,7 @@ Pending on remote (file committed; owner applies via `supabase db push`):
 
 - [ ] `20260731210000_rename_word_to_expression.sql` — renames `learning_items.type` value `'word'` → `'expression'` and updates the `CHECK` constraint accordingly
 - [ ] `20260731220000_example_meaning.sql` — adds nullable `example_meaning TEXT` to `learning_items`
+- [ ] `20260801000000_word_class_and_verb_pairs.sql` — adds `part_of_speech`, `verb_type`, `transitivity` (all nullable, `CHECK`-constrained) and `paired_item_id` (self-referential FK, `ON DELETE SET NULL`, indexed) to `learning_items`
 
 **Migration history repair (2026-07-31):** Two orphaned migration versions (`20260721013000_item_examples`, `20260721014500_item_examples_reading_unique`) were applied on remote during the earlier `item_examples` design, then their local files were deleted when compounds were reworked as derived vocabulary (2026-07-30 rework). This caused `supabase db push` to fail with "Remote migration versions not found in local migrations directory." Fixed via `supabase migration repair --status reverted 20260721013000 20260721014500`, then `supabase db push` completed cleanly.
 
@@ -945,7 +986,9 @@ grammar,N4,grammar,てから,after doing
 
 ### 12.2 CSV recommended (full)
 
-**Vocabulary / grammar** — use `templates/import/vocabulary-template.csv` / `grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes`. A compound word (e.g. `一時`) is simply an `expression` row here — nothing links it to a kanji row; that relationship is derived live (§8.4.2).
+**Vocabulary** — use `templates/import/vocabulary-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,part_of_speech,verb_type,transitivity,paired_with,source,source_ref,tags,notes`. A compound word (e.g. `一時`) is simply an `expression` row here — nothing links it to a kanji row; that relationship is derived live (§8.4.2). `part_of_speech`/`verb_type`/`transitivity`/`paired_with` are optional word-class metadata (§8.4.4, ADR-016) — only meaningful for `expression` rows.
+
+**Grammar** — use `templates/import/grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes` (no word-class columns — those only apply to `expression`).
 
 **Kanji** — use `templates/import/kanji-template.csv`:
 
@@ -960,6 +1003,10 @@ Column notes:
 - `onyomi`, `kunyomi` — tri-state cells (see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live)): empty = unset, `-` = none, text = set. There is no `reading` column for kanji rows — no standalone reading is stored.
 - `meaning` — English; multiple senses separated by ` · ` (mediopunkt). Import also accepts `/` or `;` and normalizes to ` · `
 - `example`, `example_reading`, `example_meaning` — vocabulary/grammar's own usage sentence, its reading, and its English translation (all optional), stored directly on that item; not applicable to kanji rows
+- `part_of_speech` — expression rows only (§8.4.4): `noun`, `verb`, `i-adjective`, `na-adjective`, `adverb`, `particle`, `conjunction`, `other`; empty = not set
+- `verb_type` — expression rows only, when `part_of_speech` is `verb`: `godan`, `ichidan`, `irregular`
+- `transitivity` — expression rows only, when `part_of_speech` is `verb`: `transitive`, `intransitive`, `both`
+- `paired_with` — expression rows only: Japanese text of the counterpart verb (e.g. `開ける` on the `開く` row); resolved after all rows are imported, so either verb can come first in the file
 - `source` / `source_ref` — optional; create Source if missing
 - `notes` — optional free text (last column on all templates); can also be added/edited later via the item edit form
 - Legacy column name `german` — treat as alias for `meaning` if present in old files
@@ -998,19 +1045,19 @@ Column notes:
 
 ### 12.6 CSV templates to ship
 
-- [x] `templates/import/vocabulary-template.csv`
+- [x] `templates/import/vocabulary-template.csv` — incl. `part_of_speech`/`verb_type`/`transitivity`/`paired_with` (ADR-016)
 - [x] `templates/import/kanji-template.csv` — onyomi/kunyomi only, no `reading` or compound columns
 - [x] `templates/import/grammar-template.csv`
 
-### 12.7 Import implementation (reworked 2026-07-30)
+### 12.7 Import implementation (reworked 2026-07-30; word-class fields added 2026-08-01)
 
 **`lib/import/`:**
 - `parseCsv.ts` — quoted-field CSV parser
 - `columnMap.ts` — header aliases (`german` → meaning, etc.)
-- `normalizeField.ts` — defaults, topics, tags, meaning normalization (`meaningText.ts`)
-- `parseRow.ts` — row validation; kanji uses `parseImportReadingCell()` for onyomi/kunyomi only
+- `normalizeField.ts` — defaults, topics, tags, meaning normalization (`meaningText.ts`); `parsePartOfSpeech`/`parseVerbType`/`parseTransitivity` (ADR-016)
+- `parseRow.ts` — row validation; kanji uses `parseImportReadingCell()` for onyomi/kunyomi only; expression rows parse word-class fields
 - `buildPreview.ts` — DB + in-file duplicate detection (valid / duplicate / invalid only)
-- `executeImport.ts` — batch, items, topics, sources, links; re-checks at execute time
+- `executeImport.ts` — batch, items, topics, sources, links; re-checks at execute time; `resolvePairedVerbs()` post-pass links `paired_with` after all rows are created (ADR-016)
 
 **`features/import/`:**
 - `ImportView`, `ImportInput`, `ImportPreviewTable`, `ImportOptionsPanel`, `ImportResultView`
@@ -1041,7 +1088,7 @@ Column notes:
 - Live search (debounced ~200ms)
 - Partial match (`食` → 食べる, 食事, …)
 - Normalize hiragana/katakana, full/half-width
-- Filters: type, level, skill, mastery, "weak only"
+- Filters: type, level, skill, mastery, part of speech, verb type, transitivity, "weak only" (ADR-016)
 - Grouped results with type badge and mastery %
 - Click → item detail / topic overview / "Review now"
 - On create: "Similar entry already exists" warning
@@ -1689,6 +1736,7 @@ const id = createId();
 | 2026-07-30 | **Kanji import CSVs simplified** — `kanji-template.csv` drops `reading` and all compound/example columns (onyomi/kunyomi/meaning/topics/source/tags/notes only); old Genki CSV data files (`data/genki1-n5-kanji.csv`, `data/genki2-n4-kanji.csv`) deleted; `notes` remains optional and editable later via the item form |
 | 2026-07-30 | **Review/list UI simplified** — kanji review-card front shows character only (no reading); kanji list/search subtitle shows nothing; import preview drops the `example` row status (every row is now a full item) |
 | 2026-07-30 | **New working kanji CSVs** — `data/jlpt-n5-kanji.csv` (80 rows), `data/jlpt-n4-kanji.csv` (198 rows); full JLPT lists (source: tanos.co.uk), already matching the new `kanji-template.csv` shape (onyomi/kunyomi only) |
+| 2026-08-01 | **Word-class metadata + verb pairs added (ADR-016)** — `partOfSpeech`/`verbType`/`transitivity` on `expression` items (structured, validated, not free-text tags); optional `pairedItemId` links transitive/intransitive counterpart verbs (e.g. 開く ↔ 開ける), stored on one side only and resolved live in both directions via `findPairedItem()` (`pairedItemLookup.ts`), matching the kanji ↔ compound derived-relationship pattern; wired through `ItemForm` (word-class section, shown only for expressions), CSV import (`part_of_speech`/`verb_type`/`transitivity`/`paired_with`, pairs resolved in a post-pass so either verb can come first in the file), sync mappers, `/search` filters, review card, and item detail page; migration `20260801000000_word_class_and_verb_pairs.sql` pending owner `supabase db push` |
 | 2026-07-31 | **`exampleMeaning` field added** — English translation of an item's own `example` sentence, since a full sentence can use grammar/vocab beyond the item itself; optional column alongside `example`/`example_reading`; wired through import (CSV column `example_meaning`), sync mappers, search, review card, item detail page, import preview; migration `20260731220000_example_meaning.sql` pending owner `supabase db push` |
 | 2026-07-31 | **`type: "word"` renamed to `"expression"`** — vocabulary entries are frequently multi-word (verbs, set phrases like お腹が空く), not single dictionary words; renamed across `ItemType`, item form, search filters, import parsing (old `word`/`vocab`/`vocabulary` CSV values still map to `expression` for backward compatibility), CSV templates; migration `20260731210000_rename_word_to_expression.sql` pending owner `supabase db push` — no data-loss risk since no vocabulary items existed in the DB yet (only kanji) |
 | 2026-07-31 | **`kanji_reading_status` migration applied to remote** — owner ran `supabase db push`; fixed a migration history mismatch first (`supabase migration repair --status reverted 20260721013000 20260721014500` for orphaned `item_examples` versions), confirmed via `supabase migration list` — all three migrations now in sync local ↔ remote |
