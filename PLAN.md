@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-08-01 (word-class metadata + verb pairs added for expressions; `part_of_speech` extended with a new migration after a sync failure revealed the prior migration was already live; one migration pending owner `supabase db push`)  
+> **Last updated:** 2026-08-01 (learn hub + lessons-before-reviews + focused practice + reading/listening activity logging; topic detail pages; `new_items_per_day` setting — migration pending owner `supabase db push`)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,14 +12,14 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` + `kanji_reading_status` applied; migration history repaired; `rename_word_to_expression` + `example_meaning` + `word_class_and_verb_pairs` (8-value `part_of_speech`) very likely applied — a sync attempt failed specifically on the `learning_items_part_of_speech_check` constraint (an 8-value-only violation), with no `type`/`example_meaning` column errors, implying those parts already succeeded; **`extend_part_of_speech` (15-value `part_of_speech` list) pending `supabase db push`** — run `supabase migration list` to confirm exact state |
+| Supabase project + migrations | 🔄 In progress | EU project; schema through `extend_part_of_speech` may already be applied — confirm with `supabase migration list`; **`new_items_per_day` (`20260801020000`) pending owner `supabase db push`** |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
-| CRUD UI | ✅ Done | Topics, sources, items (+ relations); synced |
+| CRUD UI | ✅ Done | Topics (+ detail), sources, items (+ relations); synced |
 | Sync (delta) | ✅ Done | Pull/push, pending queue, sync UI |
-| SRS + features | ✅ Done | Steps 1–9 complete |
-| Search & polish | 🔄 In progress | Steps 10–11 done (compounds now derived vocabulary items, meaning format); steps 12–15 remain |
+| SRS + features | ✅ Done | Steps 1–9 complete; lessons/practice split added 2026-08-01 |
+| Search & polish | 🔄 In progress | Steps 10–11 done; learn hub / lessons / practice / activity logging done; steps 12–15 remain (audio upload, JSON backup, settings polish) |
 
 ### Completed checklist
 - [x] Git repository + `.gitignore` (incl. `.env`)
@@ -27,8 +27,9 @@
 - [x] `supabase init`, linked project, migrations in `supabase/migrations/`
 - [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`, `20260720230000_kanji_reading_status`)
 - [x] `20260731210000_rename_word_to_expression.sql`, `20260731220000_example_meaning.sql`, `20260801000000_word_class_and_verb_pairs.sql` — very likely applied (see status table above); confirm with `supabase migration list`
-- [ ] Remote schema (pending `supabase db push`, **owner only**):
-  - `20260801010000_extend_part_of_speech.sql` — extends the `part_of_speech` `CHECK` constraint from 8 to 15 values (ADR-016)
+- [ ] Remote schema (pending `supabase db push`, **owner only** — confirm with `supabase migration list`):
+  - `20260801010000_extend_part_of_speech.sql` — extends the `part_of_speech` `CHECK` constraint from 8 to 15 values (ADR-016); may already be applied
+  - `20260801020000_new_items_per_day.sql` — adds `app_settings.new_items_per_day` (default 8) for Lessons pacing
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -45,6 +46,7 @@
 - [x] Device ID + sync metadata helpers (`ensureSyncMeta`, `getDeviceId`)
 - [x] `README.md` with setup instructions
 - [x] **Topics CRUD** — `features/topics/`; create/list/delete on `/topics`
+- [x] **Topic detail page** — `/topics/:id` lists linked items via `item_topics`; linked from TopicList + dashboard weak topics
 - [x] **Sources CRUD** — `features/sources/`; create/list/delete on `/topics`
 - [x] **Items CRUD** — `features/items/`; add/edit (`/add`, `?edit=`), browse by skill/level (`/learn/:skill`), soft-delete
 - [x] **Item relations** — multi-topic + multi-source links (`itemTopics`, `itemSources`); per-source reference
@@ -60,9 +62,16 @@
 - [x] **Review persistence** — append-only `Review` + `UserProgress` updates (synced)
 - [x] **TopicProgress** — `lib/topicProgress/` aggregates mastery %, `needsAttention` per topic
 - [x] **Topic progress UI** — mastery stats + “Needs attention” on `/topics`
-- [x] **Dashboard** — days until exam, overall + per-skill readiness, weak topics (`features/dashboard/`)
-- [x] **Smart study queue** — due + weakness boost (top 3 topics) + N5 recap (`buildReviewQueue.ts`)
-- [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`)
+- [x] **Dashboard** — days until exam, overall + per-skill readiness, weak topics, lessons available today, reading/listening minutes this week (`features/dashboard/`)
+- [x] **Smart study queue** — due (items with `user_progress` only) + weakness boost (top 3 topics) + N5 recap (`buildReviewQueue.ts`)
+- [x] **Lessons before reviews** — brand-new items (no `user_progress`) go through Lessons first; completing a lesson creates the initial progress row and makes the item review-eligible (`features/learn/lessonService.ts`)
+- [x] **Learn hub** — `/learn` overview cards for Kanji & Vocabulary / Grammar / Reading / Listening with lessons + reviews CTAs (`LearnHubPage`)
+- [x] **Kanji-unlocked lesson ordering** — shared kanji+vocab queue: N5 kanji → unlocked N5 vocab → N4 kanji → unlocked N4 vocab → kana-only → still-blocked (`buildKanjiVocabLessonQueue`)
+- [x] **Focused practice** — `/practice` drills by skill / level / part of speech / topic / struggling items; grades never write to SRS (`features/practice/`)
+- [x] **Reading/listening activity log** — `study_sessions` via `logActivitySession()`; LogPracticeForm on item detail + Learn hub; weekly minutes on dashboard
+- [x] **Curated listening resources** — static N4 links on Listening hub card (`features/listening/resources.ts`)
+- [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`, `newItemsPerDay`)
+- [x] **Lessons pacing setting** — `newItemsPerDay` (default 8) editable on `/settings`; migration `20260801020000_new_items_per_day.sql`
 - [x] **Global search** — `lib/search/`, `features/search/`; debounced `/search`, filters, grouped results, Japanese normalization
 - [x] **Delete UX** — `ConfirmDialog`; confirm + success feedback on item delete (`ItemList`); larger kanji in Learn/Search
 - [x] **Bulk data cleanup** — `lib/maintenance/deleteKanjiItems.ts`; Settings danger zone (delete all kanji + related SRS/links/examples/batches); Topics “Delete all topics”
@@ -74,11 +83,11 @@
 - [x] **`type: "word"` renamed to `"expression"`** (2026-07-31) — vocabulary entries are often multi-word (verbs, set phrases, e.g. お腹が空く), not single dictionary words; migration `20260731210000_rename_word_to_expression.sql`
 - [x] **`exampleMeaning` field** (2026-07-31) — English translation of an item's own `example` sentence; optional, alongside `example`/`exampleReading`; shown on review card back and item detail page; migration `20260731220000_example_meaning.sql`
 - [x] **Word-class metadata + verb pairs** (2026-08-01) — `partOfSpeech`, `verbType`, `transitivity` on `expression` items; optional `pairedItemId` links a verb to its transitive/intransitive counterpart (e.g. 開く ↔ 開ける), resolved live in both directions via `findPairedItem()`; form UI, CSV import (`part_of_speech`/`verb_type`/`transitivity`/`paired_with`), search filters, review card + item detail display; migration `20260801000000_word_class_and_verb_pairs.sql` (ADR-016)
-- [x] **Item detail page** — `/items/:id` read-only view; shows compounds for kanji (`KanjiCompoundsList`), component kanji for words (`WordKanjiBreakdown`)
+- [x] **Item detail page** — `/items/:id` read-only view; shows compounds for kanji (`KanjiCompoundsList`), component kanji for words (`WordKanjiBreakdown`); reading/listening items can log practice minutes
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply `20260801010000_extend_part_of_speech.sql` (extends `part_of_speech` `CHECK` constraint to 15 values; sync will fail with a `learning_items_part_of_speech_check` violation on any item using a new value until this is applied)
+- [ ] Owner: `supabase db push` — apply any pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**); confirm with `supabase migration list`
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -352,12 +361,14 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 - [x] Offline-capable (local IndexedDB)
 
 #### Progress & Planning
-- [x] Dashboard — days until exam, readiness per skill, top weak topics *(step 9; weekly plan pending)*
-- [x] Topic status — per-item via SRS; per-topic via TopicProgress *(step 8)*
-- [x] "Study today" — SRS due + weakness boost + N5 recap *(step 9, §14.1)*
-- [ ] Exam date in settings UI — *default via `ensureAppSettings()` on first load; `/settings` edit pending (step 14)*
+- [x] Dashboard — days until exam, readiness per skill, top weak topics, lessons available today, reading/listening minutes this week *(step 9; weekly plan pending)*
+- [x] Topic status — per-item via SRS; per-topic via TopicProgress *(step 8)*; topic detail `/topics/:id`
+- [x] "Study today" — SRS due (learned items only) + weakness boost + N5 recap *(step 9, §14.1)*
+- [x] Lessons before reviews — new items taught first; daily cap `newItemsPerDay` *(§14.1a)*
+- [x] Focused practice — skill/level/POS/topic/struggling filters; independent of SRS *(§14.1b)*
+- [ ] Exam date in settings UI — *default via `ensureAppSettings()` on first load; `/settings` has `newItemsPerDay` edit; exam date / theme / `n5RecapRatio` still step 14*
 - [ ] Simple weekly plan from weaknesses + remaining time
-- [ ] Study session log (duration, skill, reviews, optional note)
+- [x] Study session log for reading/listening practice — `study_sessions` via `activityService` *(generic SRS session logging still open)*
 
 #### Sync, Backend & Backup
 - [x] Supabase Postgres — central data store (*schema migrated*)
@@ -374,11 +385,14 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 #### UI
 - [x] Dashboard — *real widgets (step 9)*
 - [x] Study today / review session — `/study` SM-2 + weakness + N5 recap ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
+- [x] Learn hub — `/learn` skill-group cards (lessons + reviews + browse)
+- [x] Lessons session — `/learn/lessons/:group` teaching flow (no grading)
 - [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete with confirm *(topic/source filters pending)*
+- [x] Focused practice — `/practice` filter builder + drill session
 - [x] Global search — `/search` with debounced query, filters, grouped results *(step 10)*
 - [x] Add — single item form on `/add`; bulk import on `/import` *(nav link added)*
-- [x] Topics & sources management — `/topics`
-- [x] Settings page route — `/settings` *(danger zone: bulk delete kanji; exam date / theme edit still step 14)*
+- [x] Topics & sources management — `/topics` + topic detail `/topics/:id`
+- [x] Settings page route — `/settings` *(lessons pacing + danger zone; exam date / theme edit still step 14)*
 - [x] Sync status in app header — last synced, pending, offline *(step 6)*
 - [ ] Theme: light / dark / system
 
@@ -411,28 +425,36 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 │  🔍 Global Search (header)              Sync status           │
 ├──────────────────────────────────────────────────────────────┤
 │  Dashboard                                                    │
-│  · Days until N4                                              │
+│  · Days until N4 · Overall readiness                          │
+│  · Study today (reviews due, ≤30) · New lessons today         │
 │  · Readiness: Vocab | Kanji | Grammar | Reading | Listening   │
-│  · Top 5 weak topics                                          │
-│  · [ Start study today ]                                      │
+│  · Top 5 weak topics → topic detail                           │
+│  · Reading & listening minutes this week                      │
 ├──────────────────────────────────────────────────────────────┤
-│  Learn                                                        │
-│    ├─ Vocabulary / Kanji / Grammar / Reading / Listening      │
-│    ├─ Filters: level, topic, tag, source, status              │
-│    └─ Item detail (/items/:id) — read-only; kanji show        │
-│       compounds, words show component kanji                   │
+│  Study  →  /study  (SRS reviews only)                         │
+│  Practice → /practice (skill/level/POS/topic/struggling)      │
 ├──────────────────────────────────────────────────────────────┤
-│  Topics & N5 Recap                                            │
-│    └─ Topic list with mastery %, needsAttention flag          │
+│  Learn (/learn hub)                                           │
+│    ├─ Kanji & Vocabulary | Grammar | Reading | Listening      │
+│    │    · Start lessons (daily cap) / Start reviews / Browse  │
+│    ├─ Lessons → /learn/lessons/:group                         │
+│    ├─ Browse → /learn/:skill (N4/N5 filter)                   │
+│    └─ Item detail (/items/:id) — kanji compounds / word       │
+│       breakdown; reading/listening practice log               │
+├──────────────────────────────────────────────────────────────┤
+│  Topics                                                       │
+│    ├─ Topic list with mastery %, needsAttention flag          │
+│    └─ Topic detail (/topics/:id) — linked items               │
 ├──────────────────────────────────────────────────────────────┤
 │  Add                                                          │
 │    ├─ Single item                                             │
 │    └─ Bulk import                                             │
 ├──────────────────────────────────────────────────────────────┤
 │  Settings                                                     │
-│    ├─ Exam date, daily goal, N5 recap ratio                   │
+│    ├─ New items per day (lessons pacing)                      │
+│    ├─ Exam date, daily goal, N5 recap ratio *(pending UI)*    │
 │    ├─ Supabase login / sync                                   │
-│    └─ Export / import backup (JSON)                           │
+│    └─ Export / import backup (JSON) *(pending)*               │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -690,6 +712,7 @@ AppSettings {
   examDate: string                // "2026-12-06"
   dailyGoalMinutes: number        // e.g. 45
   n5RecapRatio: number            // 0.2 = 20%
+  newItemsPerDay: number          // max brand-new items introduced via Lessons/day (default 8)
   locale: "de"
   theme: "light" | "dark" | "system"
   srsAlgorithm?: "sm2" | "fsrs"   // default "sm2"; user opts in to FSRS (ADR-014)
@@ -1139,7 +1162,7 @@ Kanji (0)
 - `lib/search/searchLocal.ts` — in-memory filter + group from Dexie data via `loadStudyContext()`
 - `utils/japaneseText.ts` — NFKC + katakana→hiragana normalization for partial match
 - `features/search/` — `SearchBar`, `SearchFiltersPanel`, `SearchResultsView`, `useSearch` (200ms debounce)
-- `/search` — grouped results; items link to Edit / Study; topics link to `/topics`
+- `/search` — grouped results; items link to detail / Edit; topics link to `/topics/:id`
 - `findSimilarItems()` in `searchService.ts` — ready for `/add` duplicate hint
 
 **Pending:**
@@ -1153,18 +1176,59 @@ Kanji (0)
 
 ### 14.1 Daily session ("Study today")
 
-1. **SRS due** — all overdues + never-reviewed SRS items (first in queue)
-2. **Weakness boost** — up to 8 items from top 3 topics with `needsAttention`
+Reviews only — brand-new items are **not** mixed into this queue (see §14.1a Lessons).
+
+1. **SRS due** — items that already have a `user_progress` row with `nextReviewAt <= now`
+2. **Weakness boost** — up to 8 items from top 3 topics with `needsAttention` (also requires progress)
 3. **N5 recap** — up to `round(30 × n5RecapRatio)` N5 cards (default 6 at 20%)
 
-**Daily cap:** 30 cards total (`DAILY_REVIEW_LIMIT` in `lib/srs/constants.ts`). Dedupe by `item.id`; order: due → weakness → N5.
+**Daily cap:** 30 cards total (`DAILY_REVIEW_LIMIT` in `lib/srs/constants.ts`). Dedupe by `item.id`; order: due → weakness → N5. Queue can be shorter than 30 when fewer cards are eligible.
 
 **Constants:** `WEAKNESS_BOOST_TARGET = 8`, `WEAKNESS_TOPIC_LIMIT = 3` (`features/review/buildReviewQueue.ts`).
 
 **Implementation (step 9):**
-- `lib/study/loadStudyContext.ts` — shared data for dashboard + queue
+- `lib/study/loadStudyContext.ts` — shared data for dashboard + queue + lessons
 - `features/review/buildReviewQueue.ts` — `buildReviewQueueFromContext()`
-- `lib/settings/ensureAppSettings.ts` — defaults: exam `2026-12-06`, `n5RecapRatio` 0.2
+- `lib/settings/ensureAppSettings.ts` — defaults: exam `2026-12-06`, `n5RecapRatio` 0.2, `newItemsPerDay` 8
+
+### 14.1a Lessons (new items before reviews)
+
+Brand-new items (no `user_progress` row) are Lessons material, not reviews.
+
+1. User opens `/learn` hub → picks a group → `/learn/lessons/:group`
+2. Teaching UI shows item content (reuses review card, always revealed); **Next** / **Finish lesson** — no grading
+3. On finish, `completeLessons()` creates the initial `user_progress` row (`createInitialProgressFields()`, `nextReviewAt = now`) → item becomes review-eligible
+4. Daily pacing: `newItemsPerDay` (Settings; default 8) shared across all lesson groups; `countLessonsCompletedToday()` counts progress rows created today
+
+**Kanji & Vocabulary lesson ordering** (`buildKanjiVocabLessonQueue` in `features/learn/lessonService.ts`), recomputed live from known kanji (`extractKanjiCharacters`):
+
+1. N5 kanji not yet learned
+2. N5 vocabulary whose kanji are all already learned
+3. N4 kanji not yet learned
+4. N4 vocabulary whose kanji are all already learned
+5. Leftover vocabulary: kana-only first, then still-blocked by unlearned kanji
+
+Grammar / Reading / Listening each have a simple per-type queue (N5 then N4).
+
+**Groups:** `kanji-vocab` | `grammar` | `reading` | `listening`
+
+### 14.1b Focused Practice (outside SRS)
+
+`/practice` — on-demand drills that **never** write `reviews` or update SM-2 scheduling.
+
+**Filters:** skill, level, part of speech (vocabulary only), topic, struggling items (`doesItemNeedAttention`).
+
+**Session:** same reveal card UI; Knew it / Forgot it only updates in-session stats (`features/practice/`).
+
+### 14.1c Reading / listening activity logging
+
+Reading and listening are excluded from SRS (`SRS_ITEM_TYPES`). Practice is logged as `StudySession` rows via `logActivitySession()` (`features/activity/`):
+
+- On item detail for `type: reading|listening`
+- Quick log on Learn hub Reading/Listening cards (external material, optional note)
+- Dashboard shows minutes this week (`getActivityMinutesThisWeek`)
+
+Listening hub also surfaces curated external N4 resources (`features/listening/resources.ts`).
 
 ### 14.2 Weekly plan (v1, simple)
 
@@ -1319,9 +1383,10 @@ Use OGG or lower bitrate to save space if needed.
 10c. [x] Kanji onyomi/kunyomi tri-state readings — types, form, review UI, sync mappers, migration file ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 11. [x] Bulk import CSV — `lib/import/`, `/import` UI, kanji onyomi/kunyomi, mediopunkt meanings (§12)
 11b. [x] Compounds as derived vocabulary — kanji ↔ compound relationship computed live by text search, not stored; `/items/:id` detail page ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
+11c. [x] Learn hub + lessons-before-reviews + focused practice + reading/listening activity logging — topic detail, `newItemsPerDay`, curated listening resources (§14.1a–c)
 12. [ ] Audio upload + playback (Storage)
 13. [ ] JSON export/import (backup)
-14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(partial: danger zone done; sync status in header)*
+14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(partial: `newItemsPerDay` + danger zone done; sync status in header)*
 15. [ ] Polish — dark mode, error handling *(CSV templates shipped)*
 
 ---
@@ -1505,11 +1570,15 @@ All IO and domain logic without React:
 | `lib/srs/` | SM-2 scheduling (step 7); FSRS + readiness helper (phase 2) |
 | `lib/topicProgress/` | TopicProgress aggregation (step 8); `topNeedsAttentionTopics()` for study queue |
 | `lib/dashboard/` | Skill/overall readiness scores (step 9) |
-| `lib/study/` | Shared `loadStudyContext()` for dashboard + review queue |
-| `lib/settings/` | `ensureAppSettings()` defaults (exam date, n5RecapRatio) |
+| `lib/study/` | Shared `loadStudyContext()` for dashboard + review queue + lessons |
+| `lib/settings/` | `ensureAppSettings()` defaults (exam date, n5RecapRatio, newItemsPerDay) |
 | `features/dashboard/` | Dashboard widgets, `useDashboard`, `loadDashboardData()` |
+| `features/learn/` | Learn hub, lesson queue/ordering, lesson session UI |
+| `features/practice/` | Focused practice filters + session (no SRS writes) |
+| `features/activity/` | Reading/listening `study_sessions` logging |
+| `features/listening/` | Curated external N4 listening resource list |
 | `features/search/` | Search UI, `useSearch`, `searchService` *(step 10)* |
-| `features/review/buildReviewQueue.ts` | Mixed study queue: due + weakness + N5 recap |
+| `features/review/buildReviewQueue.ts` | Review queue: due (with progress) + weakness + N5 recap |
 | `lib/import/` | CSV parse, validate, duplicate check |
 | `lib/search/` | IndexedDB search queries *(step 10)* |
 
@@ -1557,16 +1626,20 @@ Components and hooks never touch Dexie tables directly — go through repositori
 
 ```typescript
 // app/routes.tsx
-/                     → DashboardPage
-/study                → StudyTodayPage
-/learn/:skill         → LearnBrowsePage
-/topics               → TopicsPage
-/items/:id            → ItemDetailPage    // read-only; kanji ↔ compound derived live (§8.4.2)
-/add                  → AddItemPage
-/import               → BulkImportPage
-/search               → SearchPage
-/settings             → SettingsPage
-/login                → LoginPage
+/                          → DashboardPage
+/study                     → StudyTodayPage          // SRS reviews only
+/practice                  → PracticePage            // focused drills, no SRS
+/learn                     → LearnHubPage            // skill-group overview
+/learn/lessons/:group      → LessonSessionPage       // teaching flow
+/learn/:skill              → LearnBrowsePage         // catalog browse
+/topics                    → TopicsPage
+/topics/:id                → TopicDetailPage         // items in topic
+/items/:id                 → ItemDetailPage          // read-only; kanji ↔ compound derived live (§8.4.2)
+/add                       → AddItemPage
+/import                    → BulkImportPage
+/search                    → SearchPage
+/settings                  → SettingsPage
+/login                     → LoginPage
 ```
 
 - Lazy-load routes: `const DashboardPage = lazy(() => import('@/pages/DashboardPage'))`
@@ -1758,6 +1831,7 @@ const id = createId();
 | 2026-08-01 | **`part_of_speech` extension shipped as new migration after sync failure** — `20260801000000_word_class_and_verb_pairs.sql` turned out to already be applied to remote (owner had run `supabase db push` earlier than `PLAN.md`'s stale "pending" status suggested), so the in-place edit extending its `CHECK` constraint never reached the live database; sync then failed with `new row ... violates check constraint "learning_items_part_of_speech_check"` for any item using a new `part_of_speech` value. Fixed by reverting that migration to its originally-shipped 8-value content and adding `20260801010000_extend_part_of_speech.sql` (`DROP CONSTRAINT` / `ADD CONSTRAINT` with the 15-value list) as a proper new migration; owner needs to `supabase db push` once more |
 | 2026-08-01 | **Duplicate detection now includes `reading`** (§12.4) — `findItemByJapanese()` (`itemRepository.ts`) accepts an optional `reading` argument: when given, an item is only considered a match if its stored `reading` matches exactly, otherwise it's treated as a distinct homograph rather than a duplicate; when omitted (kanji lookups, paired-verb-by-Japanese-text lookups) behavior is unchanged. `itemDuplicateKey()` (`lib/import/parseRow.ts`) likewise folds `reading` into the in-file duplicate key used by `buildPreview.ts`. Fixes real data loss on the new JLPT vocabulary CSVs, where 10+ homograph pairs (一日, 九, 十, 私, 外, ～時, ～中, ～人, 止める, 空く) would otherwise have had their second reading silently dropped on import; the same fix also loosens the manual create/edit duplicate guard (`saveItemWithRelations`) to allow legitimate homographs |
 | 2026-08-01 | **Combined-spelling CSV rows split into separate items** — 20 rows in `data/jlpt-n5-vocabulary.csv` / `data/jlpt-n4-vocabulary.csv` packed multiple spellings into one `japanese` cell (e.g. `足; 脚`, `伯父; 叔父さん`, `いい; よい`); each was split into one row per spelling (reading matched per-index when the `reading` cell had the same number of `;`-separated parts, otherwise the single shared reading was reused for all), with a `notes` cross-reference (`Alt. spelling: …`) added to each. The split surfaced one genuine content collision — キロ is a shared abbreviation for both キログラム (kg) and キロメートル (km) — merged into a single キロ item with mediopunkt meaning (`kilo (kilogram) · kilo (kilometer)`, §8.4.3) rather than left as two colliding rows, since it's one word with two senses rather than two spellings of one word |
+| 2026-08-01 | **Learn hub + lessons-before-reviews + focused practice** — `/learn` hub with group cards (Kanji & Vocabulary combined, Grammar, Reading, Listening); brand-new items (no `user_progress`) must complete a Lesson before entering the SRS review queue; lesson ordering unlocks vocabulary once its kanji are learned (`buildKanjiVocabLessonQueue`); daily pacing via `AppSettings.newItemsPerDay` (default 8, Settings UI + migration `20260801020000_new_items_per_day.sql`); `/practice` drills by skill/level/POS/topic/struggling without touching SRS; reading/listening minutes logged to `study_sessions` (`activityService`); topic detail `/topics/:id`; curated N4 listening resources on Listening hub card (§14.1a–c) |
 
 ---
 
