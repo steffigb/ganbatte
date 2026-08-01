@@ -160,7 +160,21 @@ async function pushDelete(userId: string, change: PendingChange): Promise<void> 
   }
 }
 
-async function pushUpsert(change: PendingChange): Promise<void> {
+/**
+ * `paired_item_id` is a self-referential FK on `learning_items`. Because
+ * `resolveChangeRecord` always reads the item's *current* local state (not a
+ * point-in-time snapshot), even an item's original "insert" pending change
+ * can carry an already-resolved `pairedItemId` pointing at a counterpart verb
+ * that hasn't been pushed yet — violating the FK. To avoid ordering the whole
+ * batch by dependency, every learningItems upsert pushes with
+ * `paired_item_id` cleared, and any pairing is deferred into `pairings` to be
+ * applied in a second pass once every item in the batch is guaranteed to
+ * exist remotely (see `applyDeferredPairings`).
+ */
+async function pushUpsert(
+  change: PendingChange,
+  pairings: Map<string, string>,
+): Promise<void> {
   const supabase = getSupabaseClient();
   const remoteTable = REMOTE_TABLE_NAMES[change.table];
   const record = await resolveChangeRecord(change);
@@ -169,34 +183,68 @@ async function pushUpsert(change: PendingChange): Promise<void> {
     return;
   }
 
+  const remoteRow = recordToRemote(change.table, record);
+
+  if (change.table === 'learningItems' && typeof remoteRow.paired_item_id === 'string') {
+    pairings.set(record.id, remoteRow.paired_item_id);
+    remoteRow.paired_item_id = null;
+  }
+
   const options = upsertOptions(change.table);
-  const { error } = await supabase
-    .from(remoteTable)
-    .upsert(recordToRemote(change.table, record), options);
+  const { error } = await supabase.from(remoteTable).upsert(remoteRow, options);
 
   if (error) {
     throw new Error(`Push upsert failed for ${remoteTable}: ${error.message}`);
   }
 
   if (UPSERT_ON_CONFLICT[change.table]) {
-    const remoteRow = await remoteRowByNaturalKey(change.table, record);
-    if (remoteRow) {
-      await reconcileNaturalKeyRecord(change.table, record, remoteRow);
+    const remoteRowResult = await remoteRowByNaturalKey(change.table, record);
+    if (remoteRowResult) {
+      await reconcileNaturalKeyRecord(change.table, record, remoteRowResult);
     }
   }
 }
 
-async function pushChange(userId: string, change: PendingChange): Promise<void> {
+async function pushChange(
+  userId: string,
+  change: PendingChange,
+  pairings: Map<string, string>,
+): Promise<void> {
   if (change.operation === 'delete') {
     await pushDelete(userId, change);
     return;
   }
 
-  await pushUpsert(change);
+  await pushUpsert(change, pairings);
+}
+
+async function applyDeferredPairings(
+  userId: string,
+  pairings: Map<string, string>,
+): Promise<void> {
+  if (pairings.size === 0) {
+    return;
+  }
+
+  const supabase = getSupabaseClient();
+  const remoteTable = REMOTE_TABLE_NAMES.learningItems;
+
+  for (const [itemId, pairedItemId] of pairings) {
+    const { error } = await supabase
+      .from(remoteTable)
+      .update({ paired_item_id: pairedItemId })
+      .eq('id', itemId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Push pairing update failed for ${remoteTable}: ${error.message}`);
+    }
+  }
 }
 
 export async function pushPendingChanges(userId: string): Promise<number> {
   const pendingChanges = await listPendingChanges();
+  const pairings = new Map<string, string>();
   let pushed = 0;
 
   for (const change of pendingChanges) {
@@ -204,10 +252,12 @@ export async function pushPendingChanges(userId: string): Promise<number> {
       continue;
     }
 
-    await pushChange(userId, change);
+    await pushChange(userId, change, pairings);
     await removePendingChange(change.id);
     pushed += 1;
   }
+
+  await applyDeferredPairings(userId, pairings);
 
   return pushed;
 }
