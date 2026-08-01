@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-08-01 (word-class metadata + verb pairs added for expressions; three migrations pending owner `supabase db push`)  
+> **Last updated:** 2026-08-01 (word-class metadata + verb pairs added for expressions; `part_of_speech` extended with a new migration after a sync failure revealed the prior migration was already live; one migration pending owner `supabase db push`)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,7 +12,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` + `kanji_reading_status` applied; migration history repaired; **`rename_word_to_expression` + `example_meaning` + `word_class_and_verb_pairs` pending `supabase db push`** |
+| Supabase project + migrations | 🔄 In progress | EU project; `initial_schema` + `complete_schema` + `kanji_reading_status` applied; migration history repaired; `rename_word_to_expression` + `example_meaning` + `word_class_and_verb_pairs` (8-value `part_of_speech`) very likely applied — a sync attempt failed specifically on the `learning_items_part_of_speech_check` constraint (an 8-value-only violation), with no `type`/`example_meaning` column errors, implying those parts already succeeded; **`extend_part_of_speech` (15-value `part_of_speech` list) pending `supabase db push`** — run `supabase migration list` to confirm exact state |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
@@ -26,10 +26,9 @@
 - [x] Supabase project created (EU region)
 - [x] `supabase init`, linked project, migrations in `supabase/migrations/`
 - [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`, `20260720230000_kanji_reading_status`)
+- [x] `20260731210000_rename_word_to_expression.sql`, `20260731220000_example_meaning.sql`, `20260801000000_word_class_and_verb_pairs.sql` — very likely applied (see status table above); confirm with `supabase migration list`
 - [ ] Remote schema (pending `supabase db push`, **owner only**):
-  - `20260731210000_rename_word_to_expression.sql` — `learning_items.type` value `'word'` → `'expression'`
-  - `20260731220000_example_meaning.sql` — adds `example_meaning` (English translation of `example`) to `learning_items`
-  - `20260801000000_word_class_and_verb_pairs.sql` — adds `part_of_speech`, `verb_type`, `transitivity`, `paired_item_id` (+ index) to `learning_items` (ADR-016)
+  - `20260801010000_extend_part_of_speech.sql` — extends the `part_of_speech` `CHECK` constraint from 8 to 15 values (ADR-016)
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -79,7 +78,7 @@
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply `20260731210000_rename_word_to_expression.sql`, `20260731220000_example_meaning.sql`, and `20260801000000_word_class_and_verb_pairs.sql`
+- [ ] Owner: `supabase db push` — apply `20260801010000_extend_part_of_speech.sql` (extends `part_of_speech` `CHECK` constraint to 15 values; sync will fail with a `learning_items_part_of_speech_check` violation on any item using a new value until this is applied)
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -273,7 +272,7 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 
 **Decision (2026-08-01, `partOfSpeech` extended 2026-08-01):** `expression` items carry optional grammatical metadata: `partOfSpeech` (noun, pronoun, verb, い-adjective, な-adjective, adverb, particle, conjunction, interjection, counter, prefix, suffix, determiner, phrase, other), and — only when `partOfSpeech === 'verb'` — `verbType` (godan, ichidan, irregular) and `transitivity` (transitive, intransitive, both). Kanji/grammar/reading/listening items never set these fields.
 
-**`partOfSpeech` extension:** The initial 8-value set (noun/verb/adjectives/adverb/particle/conjunction/other) covered only the categories relevant to conjugation drills. Importing full JLPT N5/N4 vocabulary lists (`data/jlpt-n5-vocabulary.csv`, `data/jlpt-n4-vocabulary.csv`) surfaced legitimate categories with no good fit in `other`: `pronoun`, `counter`, `interjection`, `prefix`, `suffix`, `determiner`, and `phrase` (fixed/set expressions, e.g. ～ございます, 下さい — named `phrase` rather than `expression` to avoid clashing with `ItemType`'s `expression` value). Added as first-class values rather than collapsing into `other`, since `other` should mean "genuinely uncategorized," not "a common category we didn't bother adding."
+**`partOfSpeech` extension:** The initial 8-value set (noun/verb/adjectives/adverb/particle/conjunction/other) covered only the categories relevant to conjugation drills. Importing full JLPT N5/N4 vocabulary lists (`data/jlpt-n5-vocabulary.csv`, `data/jlpt-n4-vocabulary.csv`) surfaced legitimate categories with no good fit in `other`: `pronoun`, `counter`, `interjection`, `prefix`, `suffix`, `determiner`, and `phrase` (fixed/set expressions, e.g. ～ございます, 下さい — named `phrase` rather than `expression` to avoid clashing with `ItemType`'s `expression` value). Added as first-class values rather than collapsing into `other`, since `other` should mean "genuinely uncategorized," not "a common category we didn't bother adding." **Shipped as a separate migration** (`20260801010000_extend_part_of_speech.sql`), not by editing `20260801000000_word_class_and_verb_pairs.sql` in place — that migration had already been applied to remote by the time the extension was made, so editing it further would have had no effect on the live database (confirmed by a `learning_items_part_of_speech_check` constraint-violation error on sync after `db push`; ADR-012's "never edit an already-pushed migration" rule applies even when `PLAN.md`'s pending-migration status is stale).
 
 **Rationale:** Verb group and transitivity are testable JLPT N4/N5 knowledge (e.g. 開く/開ける pairs), not just organizational tags. Structured, validated fields enable real filtering (`/search`) and future features (conjugation drills, dashboard breakdown by word class) that free-text `tags` cannot support reliably.
 
@@ -281,7 +280,7 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 
 **Form/import:** Manual form — a "Paired verb" text input (Japanese text), resolved to `pairedItemId` via `findItemByJapanese()` on save; only shown when `partOfSpeech === 'verb'`. CSV import — `paired_with` column (Japanese text of the counterpart), resolved in a post-pass after all rows in the batch are created/updated (`resolvePairedVerbs()` in `executeImport.ts`), so pairs can reference each other regardless of row order in the file.
 
-**Migration:** `20260801000000_word_class_and_verb_pairs.sql` adds `part_of_speech`, `verb_type`, `transitivity`, `paired_item_id` (+ index) to `learning_items`. Owner applies via `supabase db push` (ADR-013).
+**Migration:** `20260801000000_word_class_and_verb_pairs.sql` adds `part_of_speech`, `verb_type`, `transitivity`, `paired_item_id` (+ index) to `learning_items` (original 8-value `part_of_speech` list). `20260801010000_extend_part_of_speech.sql` later drops and recreates the `CHECK` constraint with the extended 15-value list. Owner applies via `supabase db push` (ADR-013).
 
 **Rejected:** Free-text `tags` only (rejected as primary storage — not validated, not reliably filterable, mixes with topic/source tags already used for other purposes). Storing the pair link on both rows symmetrically (rejected — extra write complexity for no benefit, since live reverse lookup is cheap and always consistent).
 
@@ -839,11 +838,15 @@ Applied on remote (confirmed via `supabase migration list`, 2026-07-31):
 - [x] `20260713170000_complete_schema.sql`
 - [x] `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`; standalone kun reading was dropped — see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 
+Very likely applied already (owner ran `supabase db push` in between sessions; `PLAN.md` had gone stale — see 2026-08-01 decision log entry):
+
+- [x] `20260731210000_rename_word_to_expression.sql` — renames `learning_items.type` value `'word'` → `'expression'` and updates the `CHECK` constraint accordingly
+- [x] `20260731220000_example_meaning.sql` — adds nullable `example_meaning TEXT` to `learning_items`
+- [x] `20260801000000_word_class_and_verb_pairs.sql` — adds `part_of_speech`, `verb_type`, `transitivity` (all nullable, `CHECK`-constrained, 8-value `part_of_speech` list) and `paired_item_id` (self-referential FK, `ON DELETE SET NULL`, indexed) to `learning_items`
+
 Pending on remote (file committed; owner applies via `supabase db push`):
 
-- [ ] `20260731210000_rename_word_to_expression.sql` — renames `learning_items.type` value `'word'` → `'expression'` and updates the `CHECK` constraint accordingly
-- [ ] `20260731220000_example_meaning.sql` — adds nullable `example_meaning TEXT` to `learning_items`
-- [ ] `20260801000000_word_class_and_verb_pairs.sql` — adds `part_of_speech`, `verb_type`, `transitivity` (all nullable, `CHECK`-constrained) and `paired_item_id` (self-referential FK, `ON DELETE SET NULL`, indexed) to `learning_items`
+- [ ] `20260801010000_extend_part_of_speech.sql` — drops and recreates `learning_items_part_of_speech_check` with the extended 15-value list (ADR-016)
 
 **Migration history repair (2026-07-31):** Two orphaned migration versions (`20260721013000_item_examples`, `20260721014500_item_examples_reading_unique`) were applied on remote during the earlier `item_examples` design, then their local files were deleted when compounds were reworked as derived vocabulary (2026-07-30 rework). This caused `supabase db push` to fail with "Remote migration versions not found in local migrations directory." Fixed via `supabase migration repair --status reverted 20260721013000 20260721014500`, then `supabase db push` completed cleanly.
 
@@ -1747,6 +1750,7 @@ const id = createId();
 | 2026-07-31 | **`kanji_reading_status` migration applied to remote** — owner ran `supabase db push`; fixed a migration history mismatch first (`supabase migration repair --status reverted 20260721013000 20260721014500` for orphaned `item_examples` versions), confirmed via `supabase migration list` — all three migrations now in sync local ↔ remote |
 | 2026-08-01 | **Full JLPT N5/N4 vocabulary CSVs added** — `data/jlpt-n5-vocabulary.csv` (718 rows), `data/jlpt-n4-vocabulary.csv` (668 rows), source: `jamsinclair/open-anki-jlpt-decks`; reviewing these against the app's import rules surfaced 7 part-of-speech categories with no clean fit in the existing 8-value `PartOfSpeech` enum |
 | 2026-08-01 | **`PartOfSpeech` extended** (ADR-016) — added `pronoun`, `counter`, `interjection`, `prefix`, `suffix`, `determiner`, `phrase` (7 new values, was 8 now 15); `phrase` covers fixed/set expressions and is a deliberately different name from `ItemType`'s `expression` to avoid confusion; import also accepts the CSV value `expression` as an alias for `phrase`; since `20260801000000_word_class_and_verb_pairs.sql` had not yet been pushed to remote (still pending, ADR-013), its `CHECK` constraint was edited in place rather than adding a second migration — form dropdown (`ItemForm`), search filter (`SearchFiltersPanel`), and labels (`wordClassLabels.ts`) all updated to match |
+| 2026-08-01 | **`part_of_speech` extension shipped as new migration after sync failure** — `20260801000000_word_class_and_verb_pairs.sql` turned out to already be applied to remote (owner had run `supabase db push` earlier than `PLAN.md`'s stale "pending" status suggested), so the in-place edit extending its `CHECK` constraint never reached the live database; sync then failed with `new row ... violates check constraint "learning_items_part_of_speech_check"` for any item using a new `part_of_speech` value. Fixed by reverting that migration to its originally-shipped 8-value content and adding `20260801010000_extend_part_of_speech.sql` (`DROP CONSTRAINT` / `ADD CONSTRAINT` with the 15-value list) as a proper new migration; owner needs to `supabase db push` once more |
 | 2026-08-01 | **Duplicate detection now includes `reading`** (§12.4) — `findItemByJapanese()` (`itemRepository.ts`) accepts an optional `reading` argument: when given, an item is only considered a match if its stored `reading` matches exactly, otherwise it's treated as a distinct homograph rather than a duplicate; when omitted (kanji lookups, paired-verb-by-Japanese-text lookups) behavior is unchanged. `itemDuplicateKey()` (`lib/import/parseRow.ts`) likewise folds `reading` into the in-file duplicate key used by `buildPreview.ts`. Fixes real data loss on the new JLPT vocabulary CSVs, where 10+ homograph pairs (一日, 九, 十, 私, 外, ～時, ～中, ～人, 止める, 空く) would otherwise have had their second reading silently dropped on import; the same fix also loosens the manual create/edit duplicate guard (`saveItemWithRelations`) to allow legitimate homographs |
 | 2026-08-01 | **Combined-spelling CSV rows split into separate items** — 20 rows in `data/jlpt-n5-vocabulary.csv` / `data/jlpt-n4-vocabulary.csv` packed multiple spellings into one `japanese` cell (e.g. `足; 脚`, `伯父; 叔父さん`, `いい; よい`); each was split into one row per spelling (reading matched per-index when the `reading` cell had the same number of `;`-separated parts, otherwise the single shared reading was reused for all), with a `notes` cross-reference (`Alt. spelling: …`) added to each. The split surfaced one genuine content collision — キロ is a shared abbreviation for both キログラム (kg) and キロメートル (km) — merged into a single キロ item with mediopunkt meaning (`kilo (kilogram) · kilo (kilometer)`, §8.4.3) rather than left as two colliding rows, since it's one word with two senses rather than two spellings of one word |
 

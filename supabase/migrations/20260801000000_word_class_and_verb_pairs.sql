@@ -10,9 +10,8 @@ ALTER TABLE public.learning_items
   ADD COLUMN IF NOT EXISTS part_of_speech TEXT
     CHECK (
       part_of_speech IS NULL OR part_of_speech IN (
-        'noun', 'pronoun', 'verb', 'i-adjective', 'na-adjective', 'adverb',
-        'particle', 'conjunction', 'interjection', 'counter', 'prefix',
-        'suffix', 'determiner', 'phrase', 'other'
+        'noun', 'verb', 'i-adjective', 'na-adjective', 'adverb',
+        'particle', 'conjunction', 'other'
       )
     ),
   ADD COLUMN IF NOT EXISTS verb_type TEXT
