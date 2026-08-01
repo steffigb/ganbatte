@@ -33,17 +33,34 @@ export async function listItemsBySkill(
     .toArray();
 }
 
+/**
+ * Finds an item by (userId, type, japanese). When `reading` is provided, it is
+ * also required to match exactly — this disambiguates homographs that share
+ * the same kanji spelling but have different readings (e.g. 一日 いちにち vs
+ * ついたち), so they are treated as distinct items rather than duplicates.
+ * When `reading` is omitted, the first match by (userId, type, japanese) is
+ * returned regardless of reading (used where no reading is known, e.g.
+ * resolving a paired verb by its Japanese text only).
+ */
 export async function findItemByJapanese(
   userId: string,
   type: ItemType,
   japanese: string,
+  reading?: string,
 ): Promise<LearningItem | undefined> {
-  const item = await db.learningItems
-    .where('[userId+japanese+type]')
-    .equals([userId, japanese, type])
-    .first();
+  const candidates = (
+    await db.learningItems
+      .where('[userId+japanese+type]')
+      .equals([userId, japanese, type])
+      .toArray()
+  ).filter(isNotDeleted);
 
-  return item && isNotDeleted(item) ? item : undefined;
+  if (reading === undefined) {
+    return candidates[0];
+  }
+
+  const normalizedReading = reading.trim();
+  return candidates.find((item) => (item.reading ?? '').trim() === normalizedReading);
 }
 
 export async function upsertItem(item: LearningItem): Promise<string> {

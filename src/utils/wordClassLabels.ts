@@ -2,12 +2,19 @@ import type { PartOfSpeech, Transitivity, VerbType } from '@/types/domain';
 
 const PART_OF_SPEECH_LABELS: Record<PartOfSpeech, string> = {
   noun: 'Noun',
+  pronoun: 'Pronoun',
   verb: 'Verb',
   'i-adjective': 'い-adjective',
   'na-adjective': 'な-adjective',
   adverb: 'Adverb',
   particle: 'Particle',
   conjunction: 'Conjunction',
+  interjection: 'Interjection',
+  counter: 'Counter',
+  prefix: 'Prefix',
+  suffix: 'Suffix',
+  determiner: 'Determiner',
+  phrase: 'Phrase / set expression',
   other: 'Other',
 };
 

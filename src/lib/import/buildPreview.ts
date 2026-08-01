@@ -36,8 +36,13 @@ export async function buildImportPreview(
       continue;
     }
 
-    const itemKey = itemDuplicateKey(parsed.data.type, parsed.data.japanese);
-    const existing = await findItemByJapanese(userId, parsed.data.type, parsed.data.japanese);
+    const itemKey = itemDuplicateKey(parsed.data.type, parsed.data.japanese, parsed.data.reading);
+    const existing = await findItemByJapanese(
+      userId,
+      parsed.data.type,
+      parsed.data.japanese,
+      parsed.data.reading,
+    );
     const itemSeenInFile = seenItemsInFile.has(itemKey);
 
     const status = classifyRow(Boolean(existing), itemSeenInFile);

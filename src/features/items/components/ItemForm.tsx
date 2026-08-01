@@ -38,12 +38,19 @@ const levelOptions = [
 const partOfSpeechOptions = [
   { value: '', label: 'Not set' },
   { value: 'noun', label: 'Noun' },
+  { value: 'pronoun', label: 'Pronoun' },
   { value: 'verb', label: 'Verb' },
   { value: 'i-adjective', label: 'い-adjective' },
   { value: 'na-adjective', label: 'な-adjective' },
   { value: 'adverb', label: 'Adverb' },
   { value: 'particle', label: 'Particle' },
   { value: 'conjunction', label: 'Conjunction' },
+  { value: 'interjection', label: 'Interjection' },
+  { value: 'counter', label: 'Counter' },
+  { value: 'prefix', label: 'Prefix' },
+  { value: 'suffix', label: 'Suffix' },
+  { value: 'determiner', label: 'Determiner' },
+  { value: 'phrase', label: 'Phrase / set expression' },
   { value: 'other', label: 'Other' },
 ];
 

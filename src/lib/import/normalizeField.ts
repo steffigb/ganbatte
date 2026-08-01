@@ -14,12 +14,19 @@ const LEVELS: JlptLevel[] = ['N5', 'N4'];
 const SKILLS: Skill[] = ['vocabulary', 'kanji', 'grammar', 'reading', 'listening'];
 const PARTS_OF_SPEECH: PartOfSpeech[] = [
   'noun',
+  'pronoun',
   'verb',
   'i-adjective',
   'na-adjective',
   'adverb',
   'particle',
   'conjunction',
+  'interjection',
+  'counter',
+  'prefix',
+  'suffix',
+  'determiner',
+  'phrase',
   'other',
 ];
 const VERB_TYPES: VerbType[] = ['godan', 'ichidan', 'irregular'];
@@ -76,6 +83,11 @@ export function parsePartOfSpeech(value: string | undefined): PartOfSpeech | und
   }
   if (normalized === 'na-adj' || normalized === 'naadjective') {
     return 'na-adjective';
+  }
+  if (normalized === 'expression' || normalized === 'set-phrase' || normalized === 'idiom') {
+    // "expression" clashes with ItemType's `expression` value, so the word-class
+    // category for fixed phrases (e.g. ～ございます, 下さい) is named `phrase`.
+    return 'phrase';
   }
 
   return PARTS_OF_SPEECH.find((pos) => pos === normalized);

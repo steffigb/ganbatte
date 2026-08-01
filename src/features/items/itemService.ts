@@ -158,9 +158,10 @@ export async function saveItemWithRelations(
     throw new Error('Japanese and meaning are required');
   }
 
-  const duplicate = await findItemByJapanese(userId, values.type, japanese);
+  const reading = values.reading?.trim() || undefined;
+  const duplicate = await findItemByJapanese(userId, values.type, japanese, reading);
   if (duplicate && duplicate.id !== values.id) {
-    throw new Error('An item with this Japanese text and type already exists');
+    throw new Error('An item with this Japanese text, type, and reading already exists');
   }
 
   const timestamp = nowIso();

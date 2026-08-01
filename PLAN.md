@@ -271,7 +271,9 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 
 ### ADR-016: Word-class metadata for expressions; verb pairs derived, not dual-stored
 
-**Decision (2026-08-01):** `expression` items carry optional grammatical metadata: `partOfSpeech` (noun, verb, い-adjective, な-adjective, adverb, particle, conjunction, other), and — only when `partOfSpeech === 'verb'` — `verbType` (godan, ichidan, irregular) and `transitivity` (transitive, intransitive, both). Kanji/grammar/reading/listening items never set these fields.
+**Decision (2026-08-01, `partOfSpeech` extended 2026-08-01):** `expression` items carry optional grammatical metadata: `partOfSpeech` (noun, pronoun, verb, い-adjective, な-adjective, adverb, particle, conjunction, interjection, counter, prefix, suffix, determiner, phrase, other), and — only when `partOfSpeech === 'verb'` — `verbType` (godan, ichidan, irregular) and `transitivity` (transitive, intransitive, both). Kanji/grammar/reading/listening items never set these fields.
+
+**`partOfSpeech` extension:** The initial 8-value set (noun/verb/adjectives/adverb/particle/conjunction/other) covered only the categories relevant to conjugation drills. Importing full JLPT N5/N4 vocabulary lists (`data/jlpt-n5-vocabulary.csv`, `data/jlpt-n4-vocabulary.csv`) surfaced legitimate categories with no good fit in `other`: `pronoun`, `counter`, `interjection`, `prefix`, `suffix`, `determiner`, and `phrase` (fixed/set expressions, e.g. ～ございます, 下さい — named `phrase` rather than `expression` to avoid clashing with `ItemType`'s `expression` value). Added as first-class values rather than collapsing into `other`, since `other` should mean "genuinely uncategorized," not "a common category we didn't bother adding."
 
 **Rationale:** Verb group and transitivity are testable JLPT N4/N5 knowledge (e.g. 開く/開ける pairs), not just organizational tags. Structured, validated fields enable real filtering (`/search`) and future features (conjugation drills, dashboard breakdown by word class) that free-text `tags` cannot support reliably.
 
@@ -579,7 +581,7 @@ Example: `passage (of people or vehicles) / passing (through) / traffic` → `pa
 
 | Field | Meaning | Applies to |
 |-------|---------|-----------|
-| `partOfSpeech` | noun / verb / い-adjective / な-adjective / adverb / particle / conjunction / other | `expression` items only |
+| `partOfSpeech` | noun / pronoun / verb / い-adjective / な-adjective / adverb / particle / conjunction / interjection / counter / prefix / suffix / determiner / phrase / other | `expression` items only |
 | `verbType` | godan / ichidan / irregular | only when `partOfSpeech === 'verb'` |
 | `transitivity` | transitive / intransitive / both | only when `partOfSpeech === 'verb'` |
 | `pairedItemId` | counterpart verb id (e.g. 開く ↔ 開ける) | only when `partOfSpeech === 'verb'`; optional |
@@ -1003,7 +1005,7 @@ Column notes:
 - `onyomi`, `kunyomi` — tri-state cells (see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live)): empty = unset, `-` = none, text = set. There is no `reading` column for kanji rows — no standalone reading is stored.
 - `meaning` — English; multiple senses separated by ` · ` (mediopunkt). Import also accepts `/` or `;` and normalizes to ` · `
 - `example`, `example_reading`, `example_meaning` — vocabulary/grammar's own usage sentence, its reading, and its English translation (all optional), stored directly on that item; not applicable to kanji rows
-- `part_of_speech` — expression rows only (§8.4.4): `noun`, `verb`, `i-adjective`, `na-adjective`, `adverb`, `particle`, `conjunction`, `other`; empty = not set
+- `part_of_speech` — expression rows only (§8.4.4): `noun`, `pronoun`, `verb`, `i-adjective`, `na-adjective`, `adverb`, `particle`, `conjunction`, `interjection`, `counter`, `prefix`, `suffix`, `determiner`, `phrase` (fixed/set expressions), `other`; empty = not set. `expression` is also accepted as an import alias for `phrase`.
 - `verb_type` — expression rows only, when `part_of_speech` is `verb`: `godan`, `ichidan`, `irregular`
 - `transitivity` — expression rows only, when `part_of_speech` is `verb`: `transitive`, `intransitive`, `both`
 - `paired_with` — expression rows only: Japanese text of the counterpart verb (e.g. `開ける` on the `開く` row); resolved after all rows are imported, so either verb can come first in the file
@@ -1014,6 +1016,7 @@ Column notes:
 **Working source files:**
 - `data/jlpt-n5-kanji.csv` (80 rows) — full JLPT N5 kanji list (source: tanos.co.uk), onyomi/kunyomi only
 - `data/jlpt-n4-kanji.csv` (198 rows) — full JLPT N4 kanji list (source: tanos.co.uk), onyomi/kunyomi only
+- `data/jlpt-n5-vocabulary.csv` (731 rows), `data/jlpt-n4-vocabulary.csv` (675 rows) — full JLPT vocabulary lists (source: [jamsinclair/open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks)), incl. `part_of_speech`/`verb_type`/`transitivity`/`paired_with`. Contain legitimate homograph pairs sharing kanji spelling but different readings (e.g. 一日 いちにち/ついたち, 私 わたし/わたくし, 開く N5 あく/N4 ひらく) — see §12.4, duplicate detection now includes `reading` so these import as distinct items. Rows that originally combined multiple spellings in one `japanese` cell (e.g. `足; 脚`, `やはり; やっぱり`) were split into one row per spelling, cross-referenced via a `notes` entry (`Alt. spelling: …`); キロ (shared abbreviation for both kilogram and kilometer) was merged into a single item with a mediopunkt meaning (§8.4.3) instead of splitting, since it's one word with two senses, not two spellings of one word.
 
 ### 12.3 Import flow
 
@@ -1034,8 +1037,10 @@ Column notes:
 
 ### 12.4 Duplicate detection
 
-- Item key: `type` + normalized `japanese`
+- Item key: `type` + normalized `japanese` + `reading` (when the row has a reading — kanji rows never set `reading`, so they key on `type` + `japanese` only, matching the character's uniqueness). Including `reading` means homographs that share kanji spelling but differ in reading (e.g. 一日 いちにち vs ついたち, 私 わたし vs わたくし) are correctly treated as **distinct items**, not duplicates of each other.
+- Rows with no `reading` value at all still key on `type` + `japanese` alone (can't disambiguate without a reading) and behave as before.
 - Default action: **attach source** (do not create duplicate item)
+- Same rule applies to the manual create/edit duplicate guard (`saveItemWithRelations`) — creating 一日 (ついたち) when 一日 (いちにち) already exists is now allowed as a separate item; only an exact `type` + `japanese` + `reading` match is blocked.
 
 ### 12.5 Defaults for missing fields
 
@@ -1740,6 +1745,10 @@ const id = createId();
 | 2026-07-31 | **`exampleMeaning` field added** — English translation of an item's own `example` sentence, since a full sentence can use grammar/vocab beyond the item itself; optional column alongside `example`/`example_reading`; wired through import (CSV column `example_meaning`), sync mappers, search, review card, item detail page, import preview; migration `20260731220000_example_meaning.sql` pending owner `supabase db push` |
 | 2026-07-31 | **`type: "word"` renamed to `"expression"`** — vocabulary entries are frequently multi-word (verbs, set phrases like お腹が空く), not single dictionary words; renamed across `ItemType`, item form, search filters, import parsing (old `word`/`vocab`/`vocabulary` CSV values still map to `expression` for backward compatibility), CSV templates; migration `20260731210000_rename_word_to_expression.sql` pending owner `supabase db push` — no data-loss risk since no vocabulary items existed in the DB yet (only kanji) |
 | 2026-07-31 | **`kanji_reading_status` migration applied to remote** — owner ran `supabase db push`; fixed a migration history mismatch first (`supabase migration repair --status reverted 20260721013000 20260721014500` for orphaned `item_examples` versions), confirmed via `supabase migration list` — all three migrations now in sync local ↔ remote |
+| 2026-08-01 | **Full JLPT N5/N4 vocabulary CSVs added** — `data/jlpt-n5-vocabulary.csv` (718 rows), `data/jlpt-n4-vocabulary.csv` (668 rows), source: `jamsinclair/open-anki-jlpt-decks`; reviewing these against the app's import rules surfaced 7 part-of-speech categories with no clean fit in the existing 8-value `PartOfSpeech` enum |
+| 2026-08-01 | **`PartOfSpeech` extended** (ADR-016) — added `pronoun`, `counter`, `interjection`, `prefix`, `suffix`, `determiner`, `phrase` (7 new values, was 8 now 15); `phrase` covers fixed/set expressions and is a deliberately different name from `ItemType`'s `expression` to avoid confusion; import also accepts the CSV value `expression` as an alias for `phrase`; since `20260801000000_word_class_and_verb_pairs.sql` had not yet been pushed to remote (still pending, ADR-013), its `CHECK` constraint was edited in place rather than adding a second migration — form dropdown (`ItemForm`), search filter (`SearchFiltersPanel`), and labels (`wordClassLabels.ts`) all updated to match |
+| 2026-08-01 | **Duplicate detection now includes `reading`** (§12.4) — `findItemByJapanese()` (`itemRepository.ts`) accepts an optional `reading` argument: when given, an item is only considered a match if its stored `reading` matches exactly, otherwise it's treated as a distinct homograph rather than a duplicate; when omitted (kanji lookups, paired-verb-by-Japanese-text lookups) behavior is unchanged. `itemDuplicateKey()` (`lib/import/parseRow.ts`) likewise folds `reading` into the in-file duplicate key used by `buildPreview.ts`. Fixes real data loss on the new JLPT vocabulary CSVs, where 10+ homograph pairs (一日, 九, 十, 私, 外, ～時, ～中, ～人, 止める, 空く) would otherwise have had their second reading silently dropped on import; the same fix also loosens the manual create/edit duplicate guard (`saveItemWithRelations`) to allow legitimate homographs |
+| 2026-08-01 | **Combined-spelling CSV rows split into separate items** — 20 rows in `data/jlpt-n5-vocabulary.csv` / `data/jlpt-n4-vocabulary.csv` packed multiple spellings into one `japanese` cell (e.g. `足; 脚`, `伯父; 叔父さん`, `いい; よい`); each was split into one row per spelling (reading matched per-index when the `reading` cell had the same number of `;`-separated parts, otherwise the single shared reading was reused for all), with a `notes` cross-reference (`Alt. spelling: …`) added to each. The split surfaced one genuine content collision — キロ is a shared abbreviation for both キログラム (kg) and キロメートル (km) — merged into a single キロ item with mediopunkt meaning (`kilo (kilogram) · kilo (kilometer)`, §8.4.3) rather than left as two colliding rows, since it's one word with two senses rather than two spellings of one word |
 
 ---
 

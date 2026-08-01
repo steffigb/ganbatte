@@ -12,12 +12,19 @@ export type ItemType = 'expression' | 'kanji' | 'grammar' | 'reading' | 'listeni
 /** Grammatical word class — only meaningful for `type: "expression"` items. */
 export type PartOfSpeech =
   | 'noun'
+  | 'pronoun'
   | 'verb'
   | 'i-adjective'
   | 'na-adjective'
   | 'adverb'
   | 'particle'
   | 'conjunction'
+  | 'interjection'
+  | 'counter'
+  | 'prefix'
+  | 'suffix'
+  | 'determiner'
+  | 'phrase'
   | 'other';
 
 /** Verb conjugation group — only set when `partOfSpeech === 'verb'`. */

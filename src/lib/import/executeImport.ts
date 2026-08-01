@@ -358,7 +358,7 @@ export async function executeImport(
     const row = previewRow.data;
 
     try {
-      const existing = await findItemByJapanese(userId, row.type, row.japanese);
+      const existing = await findItemByJapanese(userId, row.type, row.japanese, row.reading);
 
       if (existing) {
         if (options.duplicateAction === 'update') {

@@ -109,6 +109,21 @@ export function parseImportRow(
   };
 }
 
-export function itemDuplicateKey(type: ParsedImportRow['type'], japanese: string): string {
-  return `${type}:${japanese}`;
+/**
+ * Key used to detect duplicates within a single import file. Including
+ * `reading` disambiguates homographs sharing the same kanji spelling but
+ * different readings (e.g. 一日 いちにち vs ついたち) — without it they would
+ * collide as "duplicate" and only the first reading would be imported.
+ * Callers that don't have (or care about) a reading — e.g. the executeImport
+ * id cache used to resolve paired verbs by Japanese text alone — call this
+ * with `reading` omitted, which is equivalent to reading `''` for every row
+ * and therefore self-consistent as long as it's omitted everywhere it's used
+ * for that purpose.
+ */
+export function itemDuplicateKey(
+  type: ParsedImportRow['type'],
+  japanese: string,
+  reading?: string,
+): string {
+  return `${type}:${japanese}:${reading ?? ''}`;
 }
