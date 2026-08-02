@@ -22,6 +22,8 @@ const HEADER_ALIASES: Record<string, ImportFieldKey> = {
   example_meaning: 'example_meaning',
   examplemeaning: 'example_meaning',
   example_translation: 'example_meaning',
+  explanation: 'explanation',
+  formation: 'formation',
   part_of_speech: 'part_of_speech',
   partofspeech: 'part_of_speech',
   pos: 'part_of_speech',

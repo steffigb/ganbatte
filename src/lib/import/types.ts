@@ -23,6 +23,8 @@ export type ImportFieldKey =
   | 'example'
   | 'example_reading'
   | 'example_meaning'
+  | 'explanation'
+  | 'formation'
   | 'part_of_speech'
   | 'verb_type'
   | 'transitivity'
@@ -62,6 +64,8 @@ export type ParsedImportRow = {
   example?: string;
   exampleReading?: string;
   exampleMeaning?: string;
+  explanation?: string;
+  formation?: string;
   notes?: string;
   partOfSpeech?: PartOfSpeech;
   verbType?: VerbType;

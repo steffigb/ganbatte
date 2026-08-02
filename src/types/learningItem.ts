@@ -28,6 +28,10 @@ export interface LearningItem extends Timestamps, SoftDeletable, UserOwned {
   example?: string;
   exampleReading?: string;
   exampleMeaning?: string;
+  /** Grammar-only: usage nuance, contrast with confusable patterns (§8.4 grammar fields). */
+  explanation?: string;
+  /** Grammar-only: the construction rule, e.g. "Verb て form + もいいです". */
+  formation?: string;
   notes?: string;
   /** Word class — expression items only (§8.4 PartOfSpeech / verb classification). */
   partOfSpeech?: PartOfSpeech;

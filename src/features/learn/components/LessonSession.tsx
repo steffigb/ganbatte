@@ -77,7 +77,15 @@ export function LessonSession({ group }: LessonSessionProps) {
 
       <ReviewCard item={session.currentEntry.item} isRevealed onReveal={() => undefined} />
 
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-2">
+        <button
+          type="button"
+          disabled={session.currentIndex === 0}
+          onClick={session.back}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:hover:bg-slate-800"
+        >
+          Back
+        </button>
         {isLast ? (
           <Button type="button" disabled={session.isSaving} onClick={() => void session.finish()}>
             Finish lesson

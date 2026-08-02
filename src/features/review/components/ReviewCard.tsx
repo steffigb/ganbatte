@@ -7,6 +7,7 @@ import {
   verbTypeLabel,
 } from '@/utils/wordClassLabels';
 import { useAuth } from '@/features/auth';
+import { ExampleReferences } from '@/features/items/components/ExampleReferences';
 import { KanjiCompoundsList } from '@/features/items/components/KanjiCompoundsList';
 import { PairedVerbHint } from '@/features/items/components/PairedVerbHint';
 import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
@@ -110,9 +111,20 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
           ) : (
             <>
               {item.type === 'expression' ? <WordClassBadges item={item} /> : null}
+              {item.type === 'grammar' && item.formation ? (
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {item.formation}
+                </p>
+              ) : null}
+              {item.type === 'grammar' && item.explanation ? (
+                <p className="text-sm text-slate-600 dark:text-slate-400">{item.explanation}</p>
+              ) : null}
               <ExampleSentence item={item} />
               {item.type === 'expression' && user ? (
                 <PairedVerbHint userId={user.id} item={item} />
+              ) : null}
+              {item.type === 'grammar' && user ? (
+                <ExampleReferences userId={user.id} example={item.example} />
               ) : null}
             </>
           )}

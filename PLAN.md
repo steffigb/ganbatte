@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-08-01 (learn hub + lessons-before-reviews + focused practice + reading/listening activity logging; topic detail pages; `new_items_per_day` setting — migration pending owner `supabase db push`)  
+> **Last updated:** 2026-08-02 (grammar `explanation`/`formation` fields + full N5/N4 grammar datasets — migration pending owner `supabase db push`)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -85,9 +85,12 @@
 - [x] **Word-class metadata + verb pairs** (2026-08-01) — `partOfSpeech`, `verbType`, `transitivity` on `expression` items; optional `pairedItemId` links a verb to its transitive/intransitive counterpart (e.g. 開く ↔ 開ける), resolved live in both directions via `findPairedItem()`; form UI, CSV import (`part_of_speech`/`verb_type`/`transitivity`/`paired_with`), search filters, review card + item detail display; migration `20260801000000_word_class_and_verb_pairs.sql` (ADR-016)
 - [x] **Item detail page** — `/items/:id` read-only view; shows compounds for kanji (`KanjiCompoundsList`), component kanji for words (`WordKanjiBreakdown`); reading/listening items can log practice minutes
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
+- [x] **Grammar `explanation`/`formation` fields** (2026-08-02) — `explanation` (usage nuance, contrast with confusable sibling patterns) and `formation` (construction rule) on `grammar` items; CSV import (`explanation`/`formation` columns), sync mappers, review card, and item detail page all wired up (import-only for now, like `example`/`exampleReading`/`exampleMeaning` — no manual `ItemForm` fields yet); migration `20260802000000_grammar_explanation_formation.sql`; `related_vocabulary`/`related_kanji` deliberately **not** persisted — derived live from `example` instead (`ExampleReferences`, `findVocabularyItemsInText` + `findKanjiItemsByCharacters`), matching the kanji ↔ compound pattern (§8.4.2)
+- [x] **Full JLPT N5/N4 grammar datasets** — `data/jlpt-n5-grammar.csv` (81 rows), `data/jlpt-n4-grammar.csv` (100 rows); compiled from standard references (Genki/Minna no Nihongo/Bunpro), cross-check recommended; `templates/import/grammar-template.csv` updated to match
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply any pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**); confirm with `supabase migration list`
+- [ ] Owner: `supabase db push` — apply any pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**; **`grammar_explanation_formation`**); confirm with `supabase migration list`
+- [ ] Owner: import `data/jlpt-n5-grammar.csv` and `data/jlpt-n4-grammar.csv` via `/import` (after the migration above is live)
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -532,6 +535,10 @@ LearningItem {
   exampleMeaning?: string         // English translation of `example` (optional)
   notes?: string
 
+  // Grammar-only content fields (§8.4.5) — import-only, no manual ItemForm fields yet
+  explanation?: string            // usage nuance, contrast with confusable sibling patterns
+  formation?: string              // the construction rule, e.g. "Verb て form + もいいです"
+
   // Expression-only word-class metadata (§8.4.4, ADR-016)
   partOfSpeech?: "noun" | "verb" | "i-adjective" | "na-adjective" | "adverb" | "particle" | "conjunction" | "other"
   verbType?: "godan" | "ichidan" | "irregular"           // only when partOfSpeech === "verb"
@@ -614,6 +621,17 @@ Example: `passage (of people or vehicles) / passing (through) / traffic` → `pa
 **Import:** CSV columns `part_of_speech`, `verb_type`, `transitivity`, `paired_with` (Japanese text of the counterpart) — see §12.2. Pairs are resolved in a post-pass after all rows are created/updated, so either verb in a pair can come first in the file.
 
 **Search:** `/search` filters by part of speech, verb type, and transitivity (§13).
+
+### 8.4.5 Grammar content fields & example references (implemented, 2026-08-02)
+
+| Field | Meaning | Applies to |
+|-------|---------|-----------|
+| `explanation` | 2–5 sentences: usage nuance, when (not) to use it, contrast with confusable sibling patterns | `grammar` items only |
+| `formation` | the construction rule, e.g. "Verb て form + もいいです" | `grammar` items only |
+
+**`related_vocabulary` / `related_kanji` are deliberately not stored fields.** A vocabulary/kanji-in-example relationship is derived live from the item's own `example` text, the same derive-don't-store approach as the kanji ↔ compound relationship (§8.4.2): `findVocabularyItemsInText(userId, text)` (`src/lib/db/repositories/exampleReferenceLookup.ts`) substring-matches the user's own `expression` items (≥ 2 characters, to skip single-particle noise) against `example`; `findKanjiItemsByCharacters` (§8.4.2) covers the kanji side via `extractKanjiCharacters(example)`. Both are rendered by the shared `ExampleReferences` component (`src/features/items/components/`) on the review card back and the item detail page. This avoids a stored field that would silently go stale as the vocabulary list changes, and sidesteps the naive-substring false positives a static generator would bake in permanently.
+
+**Import-only for now:** like `example`/`exampleReading`/`exampleMeaning`, `explanation` and `formation` are populated via CSV import (§12.2) and shown read-only on the review card and item detail page; no manual `ItemForm` fields yet (would follow the same pattern if added later).
 
 ### 8.5 ItemSource
 
@@ -1020,7 +1038,7 @@ grammar,N4,grammar,てから,after doing
 
 **Vocabulary** — use `templates/import/vocabulary-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,part_of_speech,verb_type,transitivity,paired_with,source,source_ref,tags,notes`. A compound word (e.g. `一時`) is simply an `expression` row here — nothing links it to a kanji row; that relationship is derived live (§8.4.2). `part_of_speech`/`verb_type`/`transitivity`/`paired_with` are optional word-class metadata (§8.4.4, ADR-016) — only meaningful for `expression` rows.
 
-**Grammar** — use `templates/import/grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,example,example_reading,example_meaning,source,source_ref,tags,notes` (no word-class columns — those only apply to `expression`).
+**Grammar** — use `templates/import/grammar-template.csv`: `type,level,skill,topics,japanese,reading,meaning,explanation,formation,example,example_reading,example_meaning,source,source_ref,tags,notes` (no word-class columns — those only apply to `expression`). `explanation`/`formation` are grammar-only (§8.4.5); no `related_vocabulary`/`related_kanji` columns — that relationship is derived live from `example`, not imported.
 
 **Kanji** — use `templates/import/kanji-template.csv`:
 
@@ -1035,6 +1053,7 @@ Column notes:
 - `onyomi`, `kunyomi` — tri-state cells (see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live)): empty = unset, `-` = none, text = set. There is no `reading` column for kanji rows — no standalone reading is stored.
 - `meaning` — English; multiple senses separated by ` · ` (mediopunkt). Import also accepts `/` or `;` and normalizes to ` · `
 - `example`, `example_reading`, `example_meaning` — vocabulary/grammar's own usage sentence, its reading, and its English translation (all optional), stored directly on that item; not applicable to kanji rows
+- `explanation`, `formation` — grammar rows only (§8.4.5): usage nuance and the construction rule; no `related_vocabulary`/`related_kanji` columns — derived live from `example` instead, not imported
 - `part_of_speech` — expression rows only (§8.4.4): `noun`, `pronoun`, `verb`, `i-adjective`, `na-adjective`, `adverb`, `particle`, `conjunction`, `interjection`, `counter`, `prefix`, `suffix`, `determiner`, `phrase` (fixed/set expressions), `other`; empty = not set. `expression` is also accepted as an import alias for `phrase`.
 - `verb_type` — expression rows only, when `part_of_speech` is `verb`: `godan`, `ichidan`, `irregular`
 - `transitivity` — expression rows only, when `part_of_speech` is `verb`: `transitive`, `intransitive`, `both`
@@ -1044,6 +1063,7 @@ Column notes:
 - Legacy column name `german` — treat as alias for `meaning` if present in old files
 
 **Working source files:**
+- `data/jlpt-n5-grammar.csv` (81 rows), `data/jlpt-n4-grammar.csv` (100 rows) — compiled from standard JLPT grammar references (cross-check recommended against Genki/Minna no Nihongo/Bunpro); incl. `explanation`/`formation` (§8.4.5)
 - `data/jlpt-n5-kanji.csv` (80 rows) — full JLPT N5 kanji list (source: tanos.co.uk), onyomi/kunyomi only
 - `data/jlpt-n4-kanji.csv` (198 rows) — full JLPT N4 kanji list (source: tanos.co.uk), onyomi/kunyomi only
 - `data/jlpt-n5-vocabulary.csv` (731 rows), `data/jlpt-n4-vocabulary.csv` (675 rows) — full JLPT vocabulary lists (source: [jamsinclair/open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks)), incl. `part_of_speech`/`verb_type`/`transitivity`/`paired_with`. Contain legitimate homograph pairs sharing kanji spelling but different readings (e.g. 一日 いちにち/ついたち, 私 わたし/わたくし, 開く N5 あく/N4 ひらく) — see §12.4, duplicate detection now includes `reading` so these import as distinct items. Rows that originally combined multiple spellings in one `japanese` cell (e.g. `足; 脚`, `やはり; やっぱり`) were split into one row per spelling, cross-referenced via a `notes` entry (`Alt. spelling: …`); キロ (shared abbreviation for both kilogram and kilometer) was merged into a single item with a mediopunkt meaning (§8.4.3) instead of splitting, since it's one word with two senses, not two spellings of one word.
@@ -1832,6 +1852,7 @@ const id = createId();
 | 2026-08-01 | **Duplicate detection now includes `reading`** (§12.4) — `findItemByJapanese()` (`itemRepository.ts`) accepts an optional `reading` argument: when given, an item is only considered a match if its stored `reading` matches exactly, otherwise it's treated as a distinct homograph rather than a duplicate; when omitted (kanji lookups, paired-verb-by-Japanese-text lookups) behavior is unchanged. `itemDuplicateKey()` (`lib/import/parseRow.ts`) likewise folds `reading` into the in-file duplicate key used by `buildPreview.ts`. Fixes real data loss on the new JLPT vocabulary CSVs, where 10+ homograph pairs (一日, 九, 十, 私, 外, ～時, ～中, ～人, 止める, 空く) would otherwise have had their second reading silently dropped on import; the same fix also loosens the manual create/edit duplicate guard (`saveItemWithRelations`) to allow legitimate homographs |
 | 2026-08-01 | **Combined-spelling CSV rows split into separate items** — 20 rows in `data/jlpt-n5-vocabulary.csv` / `data/jlpt-n4-vocabulary.csv` packed multiple spellings into one `japanese` cell (e.g. `足; 脚`, `伯父; 叔父さん`, `いい; よい`); each was split into one row per spelling (reading matched per-index when the `reading` cell had the same number of `;`-separated parts, otherwise the single shared reading was reused for all), with a `notes` cross-reference (`Alt. spelling: …`) added to each. The split surfaced one genuine content collision — キロ is a shared abbreviation for both キログラム (kg) and キロメートル (km) — merged into a single キロ item with mediopunkt meaning (`kilo (kilogram) · kilo (kilometer)`, §8.4.3) rather than left as two colliding rows, since it's one word with two senses rather than two spellings of one word |
 | 2026-08-01 | **Learn hub + lessons-before-reviews + focused practice** — `/learn` hub with group cards (Kanji & Vocabulary combined, Grammar, Reading, Listening); brand-new items (no `user_progress`) must complete a Lesson before entering the SRS review queue; lesson ordering unlocks vocabulary once its kanji are learned (`buildKanjiVocabLessonQueue`); daily pacing via `AppSettings.newItemsPerDay` (default 8, Settings UI + migration `20260801020000_new_items_per_day.sql`); `/practice` drills by skill/level/POS/topic/struggling without touching SRS; reading/listening minutes logged to `study_sessions` (`activityService`); topic detail `/topics/:id`; curated N4 listening resources on Listening hub card (§14.1a–c) |
+| 2026-08-02 | **Grammar dataset generated in a separate session, then reconciled against the actual codebase** — a prior chat session (no repo access) generated full N5/N4 grammar CSVs (181 rows) with a richer schema than the app supported: `explanation`, `formation`, and auto-generated `related_vocabulary`/`related_kanji` (naive substring match against example sentences, flagged by that session as having false positives). Reconciled: kept `japanese` as the field name (used generically across kanji/expression/grammar throughout the codebase — renaming to `pattern` would have touched a lot of shared code for no benefit); added `explanation`/`formation` as new grammar-only `LearningItem` fields (migration `20260802000000_grammar_explanation_formation.sql`) since that's real, non-derivable content; **dropped `related_vocabulary`/`related_kanji` as stored columns entirely** — that relationship is instead derived live from `example` via `findVocabularyItemsInText()` + `findKanjiItemsByCharacters()`, displayed by a new shared `ExampleReferences` component, consistent with the kanji ↔ compound precedent (§8.4.2/ADR-015) of deriving instead of storing a relationship that would go stale. `templates/import/grammar-template.csv` and `data/jlpt-n5-grammar.csv`/`data/jlpt-n4-grammar.csv` (81 + 100 rows) regenerated without the two dropped columns |
 
 ---
 

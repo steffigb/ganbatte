@@ -272,6 +272,15 @@ function buildLearningItem(
     };
   }
 
+  if (row.type === 'grammar') {
+    return {
+      ...base,
+      reading: row.reading,
+      explanation: row.explanation,
+      formation: row.formation,
+    };
+  }
+
   return {
     ...base,
     reading: row.reading,

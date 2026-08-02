@@ -18,6 +18,7 @@ export type LessonSessionState = {
   learnedCount: number;
   remainingToday: number;
   next: () => void;
+  back: () => void;
   finish: () => Promise<void>;
   reload: () => void;
 };
@@ -81,6 +82,10 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
     setCurrentIndex((index) => Math.min(index + 1, entries.length));
   }, [entries.length]);
 
+  const back = useCallback(() => {
+    setCurrentIndex((index) => Math.max(index - 1, 0));
+  }, []);
+
   const finish = useCallback(async () => {
     if (!user || entries.length === 0 || isSaving) {
       return;
@@ -114,6 +119,7 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
       learnedCount: entries.length,
       remainingToday,
       next,
+      back,
       finish,
       reload,
     }),
@@ -127,6 +133,7 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
       isComplete,
       remainingToday,
       next,
+      back,
       finish,
       reload,
     ],

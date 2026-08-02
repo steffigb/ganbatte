@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { routes } from '@/app/routes.config';
 import type { ItemDetail } from '@/features/items/itemDetailService';
+import { ExampleReferences } from '@/features/items/components/ExampleReferences';
 import { KanjiCompoundsList } from '@/features/items/components/KanjiCompoundsList';
 import { WordKanjiBreakdown } from '@/features/items/components/WordKanjiBreakdown';
 import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
@@ -107,6 +108,31 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
             </div>
           ) : null}
           <WordKanjiBreakdown userId={userId} japanese={item.japanese} />
+        </>
+      ) : null}
+
+      {item.type === 'grammar' ? (
+        <>
+          {item.formation ? (
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {item.formation}
+            </p>
+          ) : null}
+          {item.explanation ? (
+            <p className="text-sm text-slate-600 dark:text-slate-400">{item.explanation}</p>
+          ) : null}
+          {item.example ? (
+            <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
+              <p className="text-slate-900 dark:text-slate-100">{item.example}</p>
+              {item.exampleReading ? (
+                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
+              ) : null}
+              {item.exampleMeaning ? (
+                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleMeaning}</p>
+              ) : null}
+            </div>
+          ) : null}
+          <ExampleReferences userId={userId} example={item.example} />
         </>
       ) : null}
 

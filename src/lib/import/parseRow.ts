@@ -100,6 +100,18 @@ export function parseImportRow(
     };
   }
 
+  if (type === 'grammar') {
+    return {
+      ok: true,
+      data: {
+        ...base,
+        reading: getCellValue(raw, columnMap, 'reading'),
+        explanation: getCellValue(raw, columnMap, 'explanation'),
+        formation: getCellValue(raw, columnMap, 'formation'),
+      },
+    };
+  }
+
   return {
     ok: true,
     data: {
