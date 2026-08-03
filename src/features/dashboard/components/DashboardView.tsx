@@ -3,6 +3,7 @@ import { routes } from '@/app/routes.config';
 import { Button } from '@/components/ui/Button';
 import { FormAlert } from '@/components/ui/FormAlert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { MasteryBreakdown } from '@/features/dashboard/components/MasteryBreakdown';
 import { SkillReadiness } from '@/features/dashboard/components/SkillReadiness';
 import { WeakTopicsList } from '@/features/dashboard/components/WeakTopicsList';
 import { useDashboard } from '@/features/dashboard/hooks/useDashboard';
@@ -88,7 +89,8 @@ export function DashboardView() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <MasteryBreakdown masteryCounts={data.masteryCounts} />
         <SkillReadiness skillReadiness={data.skillReadiness} />
         <WeakTopicsList weakTopics={data.weakTopics} />
       </div>

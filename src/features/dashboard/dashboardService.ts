@@ -1,8 +1,10 @@
 import { loadStudyContext } from '@/lib/study';
 import {
+  computeMasteryCounts,
   computeOverallReadiness,
   computeSkillReadiness,
   daysUntilExam,
+  type MasteryCounts,
 } from '@/lib/dashboard';
 import {
   buildReviewQueueFromContext,
@@ -29,6 +31,7 @@ export type DashboardData = {
   daysUntilExam: number;
   skillReadiness: Record<Skill, number>;
   overallReadiness: number;
+  masteryCounts: MasteryCounts;
   weakTopics: WeakTopicSummary[];
   queueSize: number;
   dueCount: number;
@@ -39,6 +42,7 @@ export type DashboardData = {
 export async function loadDashboardData(userId: string): Promise<DashboardData> {
   const context = await loadStudyContext(userId);
   const skillReadiness = computeSkillReadiness(context);
+  const masteryCounts = computeMasteryCounts(context);
   const weakTopicProgress = topNeedsAttentionTopics(context.topicProgress, 5);
   const queue = buildReviewQueueFromContext(context);
 
@@ -68,6 +72,7 @@ export async function loadDashboardData(userId: string): Promise<DashboardData> 
     daysUntilExam: daysUntilExam(context.settings.examDate),
     skillReadiness,
     overallReadiness: computeOverallReadiness(skillReadiness),
+    masteryCounts,
     weakTopics,
     queueSize: queue.length,
     dueCount: countDueCards(context),

@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-08-02 (grammar `explanation`/`formation` fields + full N5/N4 grammar datasets — migration pending owner `supabase db push`)  
+> **Last updated:** 2026-08-03 (lesson session Back button; dashboard mastery breakdown — "what you already know")  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -87,10 +87,12 @@
 - [x] **Meaning mediopunkt** — multiple senses joined with ` · `; `utils/meaningText.ts` normalizes `/` and `;` on import/save; display via `formatItemMeaning()`
 - [x] **Grammar `explanation`/`formation` fields** (2026-08-02) — `explanation` (usage nuance, contrast with confusable sibling patterns) and `formation` (construction rule) on `grammar` items; CSV import (`explanation`/`formation` columns), sync mappers, review card, and item detail page all wired up (import-only for now, like `example`/`exampleReading`/`exampleMeaning` — no manual `ItemForm` fields yet); migration `20260802000000_grammar_explanation_formation.sql`; `related_vocabulary`/`related_kanji` deliberately **not** persisted — derived live from `example` instead (`ExampleReferences`, `findVocabularyItemsInText` + `findKanjiItemsByCharacters`), matching the kanji ↔ compound pattern (§8.4.2)
 - [x] **Full JLPT N5/N4 grammar datasets** — `data/jlpt-n5-grammar.csv` (81 rows), `data/jlpt-n4-grammar.csv` (100 rows); compiled from standard references (Genki/Minna no Nihongo/Bunpro), cross-check recommended; `templates/import/grammar-template.csv` updated to match
+- [x] **`grammar_explanation_formation` migration applied + grammar datasets imported** (2026-08-03, owner) — `supabase db push` run, both CSVs imported via `/import`
+- [x] **Lesson session Back button** (2026-08-03) — `LessonSession`/`useLessonSession` gain a `back()` step (bounded at 0) alongside `next()`; since all lesson entries load upfront and nothing persists until Finish, moving back and forth is free — added to make comparing confusable grammar points (e.g. に) easier
+- [x] **Dashboard mastery breakdown** (2026-08-03) — "What you already know" card (`MasteryBreakdown`, `computeMasteryCounts()`); counts SRS-eligible items by mastery tier as a nearer-term motivator alongside the slower weighted readiness score (§14.3)
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply any pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**; **`grammar_explanation_formation`**); confirm with `supabase migration list`
-- [ ] Owner: import `data/jlpt-n5-grammar.csv` and `data/jlpt-n4-grammar.csv` via `/import` (after the migration above is live)
+- [ ] Owner: `supabase db push` — apply any remaining pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**); confirm with `supabase migration list`
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -1216,7 +1218,7 @@ Reviews only — brand-new items are **not** mixed into this queue (see §14.1a 
 Brand-new items (no `user_progress` row) are Lessons material, not reviews.
 
 1. User opens `/learn` hub → picks a group → `/learn/lessons/:group`
-2. Teaching UI shows item content (reuses review card, always revealed); **Next** / **Finish lesson** — no grading
+2. Teaching UI shows item content (reuses review card, always revealed); **Back** / **Next** / **Finish lesson** — no grading. All entries for the session are loaded upfront, so **Back** just steps `currentIndex` back (bounded at 0) with no persistence involved — lets you flip back to an earlier item to compare confusable points (e.g. the different uses of に) before finishing
 3. On finish, `completeLessons()` creates the initial `user_progress` row (`createInitialProgressFields()`, `nextReviewAt = now`) → item becomes review-eligible
 4. Daily pacing: `newItemsPerDay` (Settings; default 8) shared across all lesson groups; `countLessonsCompletedToday()` counts progress rows created today
 
@@ -1263,6 +1265,8 @@ Listening hub also surfaces curated external N4 resources (`features/listening/r
 - Per-skill % = mastered items / total items for that skill
 - Penalty: overall × 0.85 if any skill < 60%
 - Shown on `/` via `features/dashboard/`
+
+**Mastery breakdown (added 2026-08-03)** — `computeMasteryCounts()` (`lib/dashboard/readiness.ts`), rendered by `MasteryBreakdown` next to Readiness by skill: counts SRS-eligible items (`expression`/`kanji`/`grammar`; reading/listening excluded, since they never get SRS progress and would just pad `new`) by their stored `UserProgress.masteryLevel` — New / Learning / Familiar / Mastered — plus a headline `familiar + mastered / total` count. Added because the weighted readiness score above only credits fully `mastered` items (≥90% recent accuracy AND ≥14-day interval, structurally weeks away for new content) and felt unmotivating early on; `familiar` only needs a 7-day interval with no accuracy bar, so it's a nearer-term signal of "what I already know."
 
 ### 14.4 Session logging
 
@@ -1853,6 +1857,10 @@ const id = createId();
 | 2026-08-01 | **Combined-spelling CSV rows split into separate items** — 20 rows in `data/jlpt-n5-vocabulary.csv` / `data/jlpt-n4-vocabulary.csv` packed multiple spellings into one `japanese` cell (e.g. `足; 脚`, `伯父; 叔父さん`, `いい; よい`); each was split into one row per spelling (reading matched per-index when the `reading` cell had the same number of `;`-separated parts, otherwise the single shared reading was reused for all), with a `notes` cross-reference (`Alt. spelling: …`) added to each. The split surfaced one genuine content collision — キロ is a shared abbreviation for both キログラム (kg) and キロメートル (km) — merged into a single キロ item with mediopunkt meaning (`kilo (kilogram) · kilo (kilometer)`, §8.4.3) rather than left as two colliding rows, since it's one word with two senses rather than two spellings of one word |
 | 2026-08-01 | **Learn hub + lessons-before-reviews + focused practice** — `/learn` hub with group cards (Kanji & Vocabulary combined, Grammar, Reading, Listening); brand-new items (no `user_progress`) must complete a Lesson before entering the SRS review queue; lesson ordering unlocks vocabulary once its kanji are learned (`buildKanjiVocabLessonQueue`); daily pacing via `AppSettings.newItemsPerDay` (default 8, Settings UI + migration `20260801020000_new_items_per_day.sql`); `/practice` drills by skill/level/POS/topic/struggling without touching SRS; reading/listening minutes logged to `study_sessions` (`activityService`); topic detail `/topics/:id`; curated N4 listening resources on Listening hub card (§14.1a–c) |
 | 2026-08-02 | **Grammar dataset generated in a separate session, then reconciled against the actual codebase** — a prior chat session (no repo access) generated full N5/N4 grammar CSVs (181 rows) with a richer schema than the app supported: `explanation`, `formation`, and auto-generated `related_vocabulary`/`related_kanji` (naive substring match against example sentences, flagged by that session as having false positives). Reconciled: kept `japanese` as the field name (used generically across kanji/expression/grammar throughout the codebase — renaming to `pattern` would have touched a lot of shared code for no benefit); added `explanation`/`formation` as new grammar-only `LearningItem` fields (migration `20260802000000_grammar_explanation_formation.sql`) since that's real, non-derivable content; **dropped `related_vocabulary`/`related_kanji` as stored columns entirely** — that relationship is instead derived live from `example` via `findVocabularyItemsInText()` + `findKanjiItemsByCharacters()`, displayed by a new shared `ExampleReferences` component, consistent with the kanji ↔ compound precedent (§8.4.2/ADR-015) of deriving instead of storing a relationship that would go stale. `templates/import/grammar-template.csv` and `data/jlpt-n5-grammar.csv`/`data/jlpt-n4-grammar.csv` (81 + 100 rows) regenerated without the two dropped columns |
+| 2026-08-02 | **`docs/` staging files removed after the grammar dataset landed** — `docs/jlpt-n5-grammar_1.csv`, `docs/jlpt-n4-grammar_1.csv`, and `docs/grammar-template.csv` were the pre-trim intermediates `data/jlpt-n5-grammar.csv`/`data/jlpt-n4-grammar.csv`/`templates/import/grammar-template.csv` were generated from (same rows, still carrying the dropped `related_vocabulary`/`related_kanji` columns); deleted as redundant duplicates. `docs/build_grammar_csv.py` (the editable source containing all 181 grammar points as Python data) and `docs/session-summary-jlpt-grammar.md` were kept |
+| 2026-08-03 | **Owner applied `20260802000000_grammar_explanation_formation.sql` and imported both grammar CSVs** via `/import` |
+| 2026-08-03 | **Lesson session Back button** — `useLessonSession` adds `back()` next to `next()`, clamped at index 0; since the full entry list loads upfront and nothing writes to `user_progress` until Finish, back/forth navigation is free. Motivation: comparing confusable grammar points side by side (e.g. the different uses of に) is easier when you're not locked to forward-only |
+| 2026-08-03 | **Dashboard "what you already know" mastery breakdown** — user feedback: the existing weighted readiness score (§14.3) only credits fully `mastered` items (≥90% recent accuracy AND ≥14-day SRS interval — structurally weeks away for new content, and a single "Hard" grade resets an item's interval/repetitions back to zero, same as "Again"), which felt unmotivating early on. Added `computeMasteryCounts()` (`lib/dashboard/readiness.ts`) + `MasteryBreakdown` component: tallies SRS-eligible items (`expression`/`kanji`/`grammar`) by their stored `masteryLevel` (New/Learning/Familiar/Mastered) with a headline `familiar + mastered / total`. `familiar` only needs a 7-day interval with no accuracy bar, so it moves noticeably sooner than `mastered` and gives nearer-term positive feedback |
 
 ---
 
