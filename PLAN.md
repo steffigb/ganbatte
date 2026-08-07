@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-08-03 (lesson session Back button; dashboard mastery breakdown — "what you already know")  
+> **Last updated:** 2026-08-07 (two-column search results; header nav restructure — Dashboard folded into home, Study/Practice/Learn/Search as equal nav items with icons, "More" dropdown for Topics/Add/Import/Settings/Sign out)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -90,6 +90,8 @@
 - [x] **`grammar_explanation_formation` migration applied + grammar datasets imported** (2026-08-03, owner) — `supabase db push` run, both CSVs imported via `/import`
 - [x] **Lesson session Back button** (2026-08-03) — `LessonSession`/`useLessonSession` gain a `back()` step (bounded at 0) alongside `next()`; since all lesson entries load upfront and nothing persists until Finish, moving back and forth is free — added to make comparing confusable grammar points (e.g. に) easier
 - [x] **Dashboard mastery breakdown** (2026-08-03) — "What you already know" card (`MasteryBreakdown`, `computeMasteryCounts()`); counts SRS-eligible items by mastery tier as a nearer-term motivator alongside the slower weighted readiness score (§14.3)
+- [x] **Two-column search results** (2026-08-07) — `/search` groups (Topics, Kanji, Vocabulary, Grammar, Reading, Listening) render as a `grid gap-4 sm:grid-cols-2` instead of a full-width stack (Topics spans both columns so Kanji/Vocabulary always land side by side beneath it); each group is a bordered card with an internal `max-h-[26rem]` scroll cap instead of growing the page; rows decluttered — dropped the redundant type/skill badges (always constant within a group), merged Japanese+reading onto one line, truncated meaning to one line
+- [x] **Home page replaces Dashboard nav tab; header restructured** (2026-08-07) — `routes.dashboard` was already `/` and already the `index` route, so no routing changed; "Ganbatte" wordmark is now a `Link` to `/` (was a static `<span>`); nav row is now **Study / Practice / Learn / Search** as equal-size pill items, each with a small inline-SVG icon, plus a new **More** dropdown (`src/components/ui/DropdownMenu.tsx` — click-outside/Escape/click-inside all close it, no new dependency) holding Topics, Add, Import, Settings, and Sign out; post-review "Dashboard" button (`ReviewComplete.tsx`) relabeled "Home"
 
 ### Next up
 - [ ] Owner: `supabase db push` — apply any remaining pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**); confirm with `supabase migration list`
@@ -425,12 +427,23 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 
 ## 7. Information Architecture (Screens)
 
+**Header (implemented, 2026-08-07):** two rows. Top row — "Ganbatte" wordmark (links
+to `/`, the home/dashboard) on the left, sync status (`Synced …` / `Sync now`) on the
+right. Nav row — **Study**, **Practice**, **Learn**, **Search** as equal-size pill
+buttons, each with a small icon, plus a **More** dropdown on the right (`DropdownMenu`,
+`src/components/ui/DropdownMenu.tsx`) containing Topics, Add, Import, Settings, and
+Sign out. There is no separate "Dashboard" nav item — the dashboard *is* the home page
+(`routes.dashboard === '/'`, already the `index` route), reached via the logo rather
+than a tab (§ decision log 2026-08-07).
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  🔍 Global Search (header)              Sync status           │
+│  Ganbatte                                       Sync status   │
+│  Study  Practice  Learn  🔍 Search           More ▾           │
 ├──────────────────────────────────────────────────────────────┤
-│  Dashboard                                                    │
+│  Home (/) — dashboard content                                 │
 │  · Days until N4 · Overall readiness                          │
+│  · What you already know (mastery breakdown)                  │
 │  · Study today (reviews due, ≤30) · New lessons today         │
 │  · Readiness: Vocab | Kanji | Grammar | Reading | Listening   │
 │  · Top 5 weak topics → topic detail                           │
@@ -447,21 +460,31 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 │    └─ Item detail (/items/:id) — kanji compounds / word       │
 │       breakdown; reading/listening practice log               │
 ├──────────────────────────────────────────────────────────────┤
-│  Topics                                                       │
+│  Topics (via More ▾)                                          │
 │    ├─ Topic list with mastery %, needsAttention flag          │
 │    └─ Topic detail (/topics/:id) — linked items               │
 ├──────────────────────────────────────────────────────────────┤
-│  Add                                                          │
+│  Add (via More ▾)                                             │
 │    ├─ Single item                                             │
 │    └─ Bulk import                                             │
 ├──────────────────────────────────────────────────────────────┤
-│  Settings                                                     │
+│  Settings (via More ▾)                                        │
 │    ├─ New items per day (lessons pacing)                      │
 │    ├─ Exam date, daily goal, N5 recap ratio *(pending UI)*    │
 │    ├─ Supabase login / sync                                   │
 │    └─ Export / import backup (JSON) *(pending)*               │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+**Learn vs. Study vs. Practice — the difference:**
+
+| | Learn | Study | Practice |
+|---|---|---|---|
+| Route | `/learn` | `/study` | `/practice` |
+| For | Brand-new items (no `user_progress` yet) | Items already due for spaced-repetition review | Any items, on demand |
+| Grading | None — just Next/Back through content | Again/Hard/Good/Easy — drives SM-2 scheduling | Knew it/Forgot it — session-only, not persisted |
+| Writes to SRS? | Creates the *initial* `user_progress` row on finish (§14.1a) | Yes — every grade is the real scheduling signal (§14.1, §14.5) | **Never** — no `reviews` row, no scheduling change (§14.1b) |
+| Purpose | First exposure to new material, paced by `newItemsPerDay` | The actual spaced-repetition queue that determines readiness/mastery | Extra, judgment-free reps (cramming, weak topics) without disturbing SRS intervals |
 
 ---
 
@@ -1861,6 +1884,9 @@ const id = createId();
 | 2026-08-03 | **Owner applied `20260802000000_grammar_explanation_formation.sql` and imported both grammar CSVs** via `/import` |
 | 2026-08-03 | **Lesson session Back button** — `useLessonSession` adds `back()` next to `next()`, clamped at index 0; since the full entry list loads upfront and nothing writes to `user_progress` until Finish, back/forth navigation is free. Motivation: comparing confusable grammar points side by side (e.g. the different uses of に) is easier when you're not locked to forward-only |
 | 2026-08-03 | **Dashboard "what you already know" mastery breakdown** — user feedback: the existing weighted readiness score (§14.3) only credits fully `mastered` items (≥90% recent accuracy AND ≥14-day SRS interval — structurally weeks away for new content, and a single "Hard" grade resets an item's interval/repetitions back to zero, same as "Again"), which felt unmotivating early on. Added `computeMasteryCounts()` (`lib/dashboard/readiness.ts`) + `MasteryBreakdown` component: tallies SRS-eligible items (`expression`/`kanji`/`grammar`) by their stored `masteryLevel` (New/Learning/Familiar/Mastered) with a headline `familiar + mastered / total`. `familiar` only needs a 7-day interval with no accuracy bar, so it moves noticeably sooner than `mastered` and gives nearer-term positive feedback |
+| 2026-08-07 | **Two-column search results** — user feedback: `/search` results (Topics, Kanji, Vocabulary, Grammar, Reading, Listening) stacked as full-width sections felt like too much scrolling, and each row was too busy (japanese + reading + a type badge + meaning + a "level · skill" line + mastery + Edit/Study, several on separate lines). Confirmed `item.type`/`item.skill` are always constant within a group (grouping is strictly by type, and `Skill`/`ItemType` are parallel enums), so the type badge and "skill" segment were pure redundancy, not just usually-redundant. Changed `SearchResultsView.tsx` to `grid gap-4 sm:grid-cols-2` with the Topics group spanning both columns (so Kanji/Vocabulary reliably land side by side beneath it, per the user's own example of searching a kanji); `SearchResultGroupView.tsx` groups became bordered cards with `max-h-[26rem] overflow-y-auto` so a group with many matches scrolls internally instead of growing the page; `SearchResultItem.tsx` dropped the type/skill badges, merged japanese+reading onto one line, and truncated the meaning line. No changes needed to `lib/search/types.ts`/`searchLocal.ts`/`useSearch.ts` — purely a rendering change |
+| 2026-08-07 | **Dashboard nav tab removed; "Ganbatte" logo becomes the home link** — user found a dedicated "Dashboard" tab redundant with the logo being a natural home-link candidate. Turned out `routes.dashboard` was already `'/'` and `DashboardPage` was already the `index` route (nested under `RequireAuth` → `AppLayout`), so this needed no routing changes at all — just removing the nav item and wrapping the previously-static "Ganbatte" `<span>` in a `Link`. `ReviewComplete.tsx`'s post-review "Dashboard" button (same `routes.dashboard` target) relabeled "Home" for consistency, since there's no more "Dashboard" concept in the nav to match the old label |
+| 2026-08-07 | **Header restructured: Topics/Add/Import/Settings/Sign out moved into a "More" dropdown; Search became a nav item; icons added to Study/Practice/Learn/Search** — user wanted a less crowded header. Built `src/components/ui/DropdownMenu.tsx` from scratch (click-outside via a `mousedown` listener + ref, Escape to close, any click inside the panel also closes it) since the project has no headless-UI library or existing Tabs/Menu primitive and none was worth adding as a dependency for one menu. Iterated on where Search lives: first a wide bordered search-bar-styled element centered in its own top header row (3-column `grid-cols-[1fr_auto_1fr]`), then moved down into the nav row still centered, then finally simplified to just another equal-size pill nav item (same `navLinkClassName` as Study/Practice/Learn) per explicit user request — the top header row is back to just logo (left) + sync status (right), and the nav row is Study/Practice/Learn/Search (each with a small hand-rolled inline-SVG icon, no icon library dependency) followed by the More dropdown |
 
 ---
 
