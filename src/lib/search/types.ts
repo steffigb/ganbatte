@@ -103,9 +103,9 @@ export function hasSearchResults(results: SearchResults): boolean {
 export function flattenSearchResults(results: SearchResults): SearchResultGroup[] {
   const groups: SearchResultGroup[] = [
     { key: 'topics', label: 'Topics', results: results.topics },
-    { key: 'grammar', label: 'Grammar', results: results.grammar },
-    { key: 'vocabulary', label: 'Vocabulary', results: results.vocabulary },
     { key: 'kanji', label: 'Kanji', results: results.kanji },
+    { key: 'vocabulary', label: 'Vocabulary', results: results.vocabulary },
+    { key: 'grammar', label: 'Grammar', results: results.grammar },
     { key: 'reading', label: 'Reading', results: results.reading },
     { key: 'listening', label: 'Listening', results: results.listening },
   ];

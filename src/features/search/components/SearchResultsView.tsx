@@ -48,12 +48,16 @@ export function SearchResultsView({
   const groups = flattenSearchResults(results);
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-4 sm:grid-cols-2">
       {groups.map((group) => (
-        <SearchResultGroupView key={group.key} group={group} />
+        <SearchResultGroupView
+          key={group.key}
+          group={group}
+          className={group.key === 'topics' ? 'sm:col-span-2' : undefined}
+        />
       ))}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900 sm:col-span-2">
         <p className="text-slate-600 dark:text-slate-400">
           Didn&apos;t find what you need?
         </p>
