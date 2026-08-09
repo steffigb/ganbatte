@@ -1,7 +1,7 @@
 # JLPT Lern-App — Implementation Plan
 
 > **Status:** Implementation in progress  
-> **Last updated:** 2026-08-08 (per-skill mastery breakdown on the browse page; Lessons: session size capped at 5, resume position on remount instead of restarting)  
+> **Last updated:** 2026-08-09 (confirmed all 9 Supabase migrations applied on remote — nothing pending)  
 > **Purpose:** Single source of truth for all implementation decisions  
 > **Audience:** Developer (private, single-user app)
 
@@ -12,7 +12,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Planning & specification | ✅ Done | `PLAN.md` |
-| Supabase project + migrations | 🔄 In progress | EU project; schema through `extend_part_of_speech` may already be applied — confirm with `supabase migration list`; **`new_items_per_day` (`20260801020000`) pending owner `supabase db push`** |
+| Supabase project + migrations | ✅ Done | EU project; all 9 migrations through `grammar_explanation_formation` (`20260802000000`) confirmed applied on remote via `supabase migration list` (2026-08-09) |
 | React + Vite PWA scaffold | ✅ Done | §22.18 checklist complete |
 | Auth | ✅ Done | Login, session persistence, protected routes |
 | Dexie + local data | ✅ Done | §10 schema, types, repositories, `pendingChanges` |
@@ -26,10 +26,7 @@
 - [x] Supabase project created (EU region)
 - [x] `supabase init`, linked project, migrations in `supabase/migrations/`
 - [x] Remote schema applied (`20260713163434_initial_schema`, `20260713170000_complete_schema`, `20260720230000_kanji_reading_status`)
-- [x] `20260731210000_rename_word_to_expression.sql`, `20260731220000_example_meaning.sql`, `20260801000000_word_class_and_verb_pairs.sql` — very likely applied (see status table above); confirm with `supabase migration list`
-- [ ] Remote schema (pending `supabase db push`, **owner only** — confirm with `supabase migration list`):
-  - `20260801010000_extend_part_of_speech.sql` — extends the `part_of_speech` `CHECK` constraint from 8 to 15 values (ADR-016); may already be applied
-  - `20260801020000_new_items_per_day.sql` — adds `app_settings.new_items_per_day` (default 8) for Lessons pacing
+- [x] `20260731210000_rename_word_to_expression.sql`, `20260731220000_example_meaning.sql`, `20260801000000_word_class_and_verb_pairs.sql`, `20260801010000_extend_part_of_speech.sql`, `20260801020000_new_items_per_day.sql`, `20260802000000_grammar_explanation_formation.sql` — all confirmed applied via `supabase migration list` (2026-08-09)
 - [x] All tables §9.2, RLS, indexes, storage bucket + policies
 - [x] `.env` + `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`)
 - [x] React 19 + Vite 7 + TypeScript (strict) + Tailwind v4
@@ -96,7 +93,6 @@
 - [x] **Per-skill mastery breakdown on the browse page** (2026-08-08) — `/learn/kanji` (and vocabulary/grammar) now shows a summary line above the item list: `N kanji · X mastered · Y familiar · Z learning · W new`, scoped to whatever skill+level is currently selected. Reused `tallyMasteryCounts()` (extracted from the dashboard's `computeMasteryCounts()`, `lib/dashboard/readiness.ts`) via a new `useItemMasteryCounts()` hook (`features/items/hooks/`) that loads progress for the currently-browsed items. Hidden for reading/listening, same reasoning as the dashboard breakdown — those skills never get SRS progress, so the count would always be 100% "new"
 
 ### Next up
-- [ ] Owner: `supabase db push` — apply any remaining pending migrations (`extend_part_of_speech` if not already live; **`new_items_per_day`**); confirm with `supabase migration list`
 - [ ] Audio upload + playback (MVP step 12)
 
 ### Dev hint — test on phone before deploy
@@ -906,15 +902,16 @@ Applied on remote (confirmed via `supabase migration list`, 2026-07-31):
 - [x] `20260713170000_complete_schema.sql`
 - [x] `20260720230000_kanji_reading_status.sql` — `onyomi_status`, `kunyomi_status` on `learning_items` (no `reading_status`; standalone kun reading was dropped — see [ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 
-Very likely applied already (owner ran `supabase db push` in between sessions; `PLAN.md` had gone stale — see 2026-08-01 decision log entry):
+Confirmed applied via `supabase migration list` (2026-08-09; PLAN.md had gone stale about several of these — see 2026-08-01 decision log entry):
 
 - [x] `20260731210000_rename_word_to_expression.sql` — renames `learning_items.type` value `'word'` → `'expression'` and updates the `CHECK` constraint accordingly
 - [x] `20260731220000_example_meaning.sql` — adds nullable `example_meaning TEXT` to `learning_items`
 - [x] `20260801000000_word_class_and_verb_pairs.sql` — adds `part_of_speech`, `verb_type`, `transitivity` (all nullable, `CHECK`-constrained, 8-value `part_of_speech` list) and `paired_item_id` (self-referential FK, `ON DELETE SET NULL`, indexed) to `learning_items`
+- [x] `20260801010000_extend_part_of_speech.sql` — drops and recreates `learning_items_part_of_speech_check` with the extended 15-value list (ADR-016)
+- [x] `20260801020000_new_items_per_day.sql` — adds `app_settings.new_items_per_day` (default 8) for Lessons pacing
+- [x] `20260802000000_grammar_explanation_formation.sql` — adds nullable `explanation`, `formation TEXT` to `learning_items` (§8.4.5)
 
-Pending on remote (file committed; owner applies via `supabase db push`):
-
-- [ ] `20260801010000_extend_part_of_speech.sql` — drops and recreates `learning_items_part_of_speech_check` with the extended 15-value list (ADR-016)
+No migrations pending as of 2026-08-09 — local and remote are fully in sync (all 9 files, confirmed via `supabase migration list`).
 
 **Migration history repair (2026-07-31):** Two orphaned migration versions (`20260721013000_item_examples`, `20260721014500_item_examples_reading_unique`) were applied on remote during the earlier `item_examples` design, then their local files were deleted when compounds were reworked as derived vocabulary (2026-07-30 rework). This caused `supabase db push` to fail with "Remote migration versions not found in local migrations directory." Fixed via `supabase migration repair --status reverted 20260721013000 20260721014500`, then `supabase db push` completed cleanly.
 
@@ -1895,6 +1892,7 @@ const id = createId();
 | 2026-08-08 | **Lesson session size capped at 5, decoupled from the daily new-item allowance** — user feedback that a full day's `newItemsPerDay` allowance in one sitting felt like too much at once, but didn't want to lose the ability to keep going if they had appetite for more that day. Added `LESSON_SESSION_SIZE = 5` in `lessonService.ts`, applied as an additional `Math.min(LESSON_SESSION_SIZE, remainingToday)` on top of the existing daily cap in `buildLessonBatch()` — the daily pacing feature (`newItemsPerDay`, Settings) is untouched and still bounds the total per day, this only chunks it into smaller sittings; starting another Lessons session the same day continues from wherever the daily allowance stands, capped at 5 again |
 | 2026-08-08 | **Learn hub "Start lessons (N)" button label fixed to match the new session size** — after the change above, the user still saw "Start lessons (20)" on the hub. Root cause: `learnHubService.ts`'s `buildCard()` computes `lessonsAvailableToday` independently from `buildLessonBatch()` — it only ever capped at the daily `remainingToday`, never at `LESSON_SESSION_SIZE`, so the button label went stale relative to what clicking it actually produces. Exported `LESSON_SESSION_SIZE` from `lessonService.ts` and added it to the `Math.min(...)` in `buildCard()`. Deliberately did **not** touch `dashboardService.ts`'s separate "New lessons today" tile computation (`Math.min(totalLessonsAvailable, remainingToday)`) — that one is meant to show the day's total runway across all groups, not a single session's size |
 | 2026-08-08 | **Per-skill mastery breakdown added to the browse page** — user asked how to see the total count and status of e.g. N5 kanji; nothing in the app showed that (Dashboard's "Readiness by skill" gives a kanji-only %, but no counts or tier breakdown; the Learn hub's stats combine kanji+vocabulary). Rather than build a new computation, extracted the existing dashboard tally into a pure `tallyMasteryCounts(items, progressByItemId)` (`lib/dashboard/readiness.ts`), with `computeMasteryCounts(context)` now just filtering to SRS types and calling it — same function, reusable outside a full `StudyContext`. New `useItemMasteryCounts(items)` hook (`features/items/hooks/`) loads progress for whatever items a page already has and tallies them; wired into `LearnBrowsePage` to show `N kanji · X mastered · Y familiar · Z learning · W new` above the item list, scoped to the currently selected skill+level. Hidden for reading/listening (same rationale as the dashboard card, §14.3) |
+| 2026-08-09 | **All pending Supabase migrations confirmed applied** — owner ran `supabase migration list`; all 9 migration files (through `20260802000000_grammar_explanation_formation`) show matching Local/Remote timestamps, nothing pending. PLAN.md's migration-status tracking had been unreliable for weeks (several "pending" notes turned out to already be applied, per the 2026-08-01 decision log entries) since the agent is barred from running `supabase db push`/`migration list` itself (ADR-013) and could only track status second-hand from the owner; cleared all stale "pending"/"may already be applied" hedges across the status table, completed checklist, and §9.6 now that there's a direct confirmation |
 
 ---
 
