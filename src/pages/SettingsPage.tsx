@@ -5,7 +5,13 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormAlert } from '@/components/ui/FormAlert';
 import { PlaceholderCard } from '@/components/ui/PlaceholderCard';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { bulkDeleteKanjiItems, countKanjiItems, countTopics } from '@/lib/maintenance';
+import {
+  bulkDeleteKanjiItems,
+  countKanjiItems,
+  countTopics,
+  countUnsetKanjiReadings,
+  markUnsetKanjiReadingsAsNone,
+} from '@/lib/maintenance';
 import { upsertAppSettings } from '@/lib/db';
 import { ensureAppSettings } from '@/lib/settings';
 import type { AppSettings } from '@/types/appSettings';
@@ -21,6 +27,9 @@ export function SettingsPage() {
   const [isLoadingCount, setIsLoadingCount] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [unsetReadingCount, setUnsetReadingCount] = useState<number | null>(null);
+  const [confirmFixReadingsOpen, setConfirmFixReadingsOpen] = useState(false);
+  const [isFixingReadings, setIsFixingReadings] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -38,13 +47,15 @@ export function SettingsPage() {
     void (async () => {
       setIsLoadingCount(true);
       try {
-        const [kanji, topics, loadedSettings] = await Promise.all([
+        const [kanji, topics, unsetReadings, loadedSettings] = await Promise.all([
           countKanjiItems(user.id),
           countTopics(user.id),
+          countUnsetKanjiReadings(user.id),
           ensureAppSettings(user.id),
         ]);
         if (!cancelled) {
           setCounts({ kanji, topics });
+          setUnsetReadingCount(unsetReadings);
           setSettings(loadedSettings);
         }
       } catch (cause) {
@@ -129,12 +140,44 @@ export function SettingsPage() {
     }
   }
 
+  async function handleConfirmFixReadings() {
+    if (!user) {
+      return;
+    }
+
+    setIsFixingReadings(true);
+    setFeedback(null);
+
+    try {
+      const result = await markUnsetKanjiReadingsAsNone(user.id);
+      setUnsetReadingCount(0);
+      setConfirmFixReadingsOpen(false);
+      setFeedback({
+        variant: 'success',
+        message:
+          result.fieldCount > 0
+            ? `Marked ${result.fieldCount} reading${result.fieldCount === 1 ? '' : 's'} across ${result.itemCount} kanji as confirmed absent. Click Sync now in the header to propagate the change to Supabase.`
+            : 'Nothing to fix — no unset readings found.',
+      });
+    } catch (cause) {
+      setFeedback({
+        variant: 'error',
+        message: cause instanceof Error ? cause.message : 'Failed to update readings',
+      });
+    } finally {
+      setIsFixingReadings(false);
+    }
+  }
+
   const kanjiLabel =
     counts === null ? (isLoadingCount ? '…' : '—') : String(counts.kanji);
   const topicLabel =
     counts === null ? (isLoadingCount ? '…' : '—') : String(counts.topics);
   const nothingToDelete =
     counts !== null && counts.kanji === 0 && counts.topics === 0;
+  const unsetReadingLabel =
+    unsetReadingCount === null ? (isLoadingCount ? '…' : '—') : String(unsetReadingCount);
+  const nothingToFix = unsetReadingCount === 0;
 
   return (
     <PageLayout title="Settings" description="Exam date, daily goals, sync, and backup.">
@@ -178,6 +221,43 @@ export function SettingsPage() {
         <PlaceholderCard>
           Exam date, sync, and export settings will be added here.
         </PlaceholderCard>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Kanji readings
+          </h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            You currently have <strong>{unsetReadingLabel}</strong> onyomi/kunyomi field
+            {unsetReadingCount === 1 ? '' : 's'} marked "not set".
+          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Marks every unconfirmed onyomi/kunyomi as confirmed-absent, so it displays as
+            "—" instead of "not set". Run this again after importing more kanji.
+          </p>
+          <Button
+            type="button"
+            className="mt-4"
+            disabled={!user || isFixingReadings || nothingToFix}
+            onClick={() => setConfirmFixReadingsOpen(true)}
+          >
+            Mark unset readings as confirmed absent
+          </Button>
+        </section>
+
+        <ConfirmDialog
+          open={confirmFixReadingsOpen}
+          title="Mark unset readings as confirmed absent?"
+          message={`Mark ${unsetReadingLabel} unset onyomi/kunyomi field${unsetReadingCount === 1 ? '' : 's'} as confirmed-absent? They'll display as "—" instead of "not set". You can still edit any kanji individually afterward.`}
+          confirmLabel="Mark as absent"
+          cancelLabel="Cancel"
+          isConfirming={isFixingReadings}
+          onConfirm={() => void handleConfirmFixReadings()}
+          onCancel={() => {
+            if (!isFixingReadings) {
+              setConfirmFixReadingsOpen(false);
+            }
+          }}
+        />
 
         <section className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
           <h2 className="text-sm font-semibold text-red-900 dark:text-red-200">Danger zone</h2>

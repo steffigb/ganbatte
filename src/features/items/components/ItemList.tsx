@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormAlert } from '@/components/ui/FormAlert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useItemRelations } from '@/features/items/hooks/useItemRelations';
+import { KanjiReadingsBlock } from '@/features/review/components/KanjiReadings';
 import type { LearningItem } from '@/types/learningItem';
 import { cn } from '@/utils/cn';
 import { formatItemMeaning } from '@/utils/meaningText';
@@ -21,6 +23,7 @@ function itemDeleteLabel(item: LearningItem): string {
 }
 
 export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
+  const relations = useItemRelations();
   const [pendingDelete, setPendingDelete] = useState<LearningItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteFeedback, setDeleteFeedback] = useState<{
@@ -111,7 +114,12 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
       />
 
       <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
-      {items.map((item) => (
+      {items.map((item) => {
+        const itemRelations = relations?.get(item.id);
+        const topics = itemRelations?.topics ?? [];
+        const sources = itemRelations?.sources ?? [];
+
+        return (
         <li
           key={item.id}
           className={cn(
@@ -129,7 +137,9 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
             >
               {item.japanese}
             </Link>
-            {item.reading ? (
+            {item.type === 'kanji' ? (
+              <KanjiReadingsBlock item={item} />
+            ) : item.reading ? (
               <p className="text-slate-500 dark:text-slate-400">{item.reading}</p>
             ) : null}
             <p className="text-slate-600 dark:text-slate-400">
@@ -138,6 +148,32 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
             <p className="text-slate-500 dark:text-slate-500">
               {item.level} · {item.type}
             </p>
+            {topics.length > 0 ? (
+              <p className="text-slate-500 dark:text-slate-500">
+                Topics:{' '}
+                {topics.map((topic, index) => (
+                  <span key={topic.id}>
+                    <Link
+                      to={routes.topicDetail(topic.id)}
+                      className="underline hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                      {topic.name}
+                    </Link>
+                    {index < topics.length - 1 ? ', ' : null}
+                  </span>
+                ))}
+              </p>
+            ) : null}
+            {sources.length > 0 ? (
+              <p className="text-slate-500 dark:text-slate-500">
+                Sources:{' '}
+                {sources
+                  .map(({ source, reference }) =>
+                    reference ? `${source.label} (${reference})` : source.label,
+                  )
+                  .join(', ')}
+              </p>
+            ) : null}
           </div>
           <div className="flex shrink-0 gap-2">
             <Link
@@ -156,7 +192,8 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
             </Button>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
     </div>
   );

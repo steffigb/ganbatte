@@ -34,6 +34,17 @@ export async function listItemsBySkill(
     .toArray();
 }
 
+export async function listItemsBySkillAnyLevel(
+  userId: string,
+  skill: Skill,
+): Promise<LearningItem[]> {
+  return db.learningItems
+    .where('skill')
+    .equals(skill)
+    .filter((item) => item.userId === userId && isNotDeleted(item))
+    .toArray();
+}
+
 export async function listItemsByTopic(topicId: string): Promise<LearningItem[]> {
   const links = await listItemTopicsByTopic(topicId);
   if (links.length === 0) {

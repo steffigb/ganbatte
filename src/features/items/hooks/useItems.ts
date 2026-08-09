@@ -3,15 +3,18 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   ensureSyncMeta,
   listItemsBySkill,
+  listItemsBySkillAnyLevel,
   listItemsByUser,
   softDeleteItem,
 } from '@/lib/db';
 import type { JlptLevel, Skill } from '@/types/domain';
 import type { LearningItem } from '@/types/learningItem';
 
+export type LevelFilter = 'all' | JlptLevel;
+
 type UseItemsOptions = {
   skill?: Skill;
-  level?: JlptLevel;
+  level?: LevelFilter;
 };
 
 export function useItems(options: UseItemsOptions = {}) {
@@ -40,8 +43,10 @@ export function useItems(options: UseItemsOptions = {}) {
         await ensureSyncMeta();
 
         let result: LearningItem[];
-        if (options.skill && options.level) {
+        if (options.skill && options.level && options.level !== 'all') {
           result = await listItemsBySkill(user.id, options.level, options.skill);
+        } else if (options.skill) {
+          result = await listItemsBySkillAnyLevel(user.id, options.skill);
         } else {
           result = await listItemsByUser(user.id);
         }

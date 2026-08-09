@@ -91,6 +91,8 @@
 - [x] **Home page replaces Dashboard nav tab; header restructured** (2026-08-07) — `routes.dashboard` was already `/` and already the `index` route, so no routing changed; "Ganbatte" wordmark is now a `Link` to `/` (was a static `<span>`); nav row is now **Study / Practice / Learn / Search** as equal-size pill items, each with a small inline-SVG icon, plus a new **More** dropdown (`src/components/ui/DropdownMenu.tsx` — click-outside/Escape/click-inside all close it, no new dependency) holding Topics, Add, Import, Settings, and Sign out; post-review "Dashboard" button (`ReviewComplete.tsx`) relabeled "Home"
 - [x] **Lessons: smaller sessions + resume position** (2026-08-08) — each Lessons session now presents at most `LESSON_SESSION_SIZE = 5` items instead of the full daily `newItemsPerDay` allowance in one sitting (§14.1a point 4); `useLessonSession` also persists the current item's id to `sessionStorage` per group and restores it on mount, so navigating away mid-session (nothing is saved until Finish) no longer restarts the session at index 0 (§14.1a point 5); Learn hub's "Start lessons (N)" button label fixed to match (`LESSON_SESSION_SIZE` exported and reused in `learnHubService.ts`'s `buildCard()`)
 - [x] **Per-skill mastery breakdown on the browse page** (2026-08-08) — `/learn/kanji` (and vocabulary/grammar) now shows a summary line above the item list: `N kanji · X mastered · Y familiar · Z learning · W new`, scoped to whatever skill+level is currently selected. Reused `tallyMasteryCounts()` (extracted from the dashboard's `computeMasteryCounts()`, `lib/dashboard/readiness.ts`) via a new `useItemMasteryCounts()` hook (`features/items/hooks/`) that loads progress for the currently-browsed items. Hidden for reading/listening, same reasoning as the dashboard breakdown — those skills never get SRS progress, so the count would always be 100% "new"
+- [x] **Browse page: "All" level filter, per-row readings/topics/sources, working topic/source filters** (2026-08-09) — `/learn/:skill`'s level toggle gained an **All** option alongside N4/N5 (`useItems`'s `level` option is now `'all' | JlptLevel`; `listItemsBySkillAnyLevel()` added to `itemRepository.ts` for the no-level-pinned query, since the existing `[userId+level+skill]` index requires an exact level). Each row in `ItemList` now shows kanji onyomi/kunyomi (reusing `KanjiReadingsBlock`) plus linked topics/sources, bulk-loaded once per list — not per item — via new `loadItemRelationsByUser()` (`itemDetailService.ts`) and a `useItemRelations()` hook. The page also gained working **Topic** and **Source** filter dropdowns (options scoped to whatever's currently visible, reset on skill change), closing the gap between the page's existing "browse by skill, level, topic, and source" description and what it actually let you filter by
+- [x] **Settings: bulk-confirm unset kanji readings** (2026-08-09) — new "Kanji readings" section on `/settings` with a "Mark unset readings as confirmed absent" action (`lib/maintenance/fixKanjiReadings.ts` — `countUnsetKanjiReadings()`, `markUnsetKanjiReadingsAsNone()`), following the same count-preview + `ConfirmDialog` pattern as the existing "Delete all kanji and topics" danger-zone action. Flips onyomi/kunyomi `ReadingStatus` from `unset` ("not set") to `none` (confirmed absent, displays as "—") wherever a reading was never confirmed either way — the unset/none distinction itself is unchanged and intentional (ADR-015), this just cleans up existing data and stays available in Settings for re-use after future kanji imports
 
 ### Next up
 - [ ] Audio upload + playback (MVP step 12)
@@ -392,7 +394,7 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 - [x] Study today / review session — `/study` SM-2 + weakness + N5 recap ([ADR-014](#adr-014-srs-phased-adoption-sm-2--fsrs))
 - [x] Learn hub — `/learn` skill-group cards (lessons + reviews + browse)
 - [x] Lessons session — `/learn/lessons/:group` teaching flow (no grading)
-- [x] Browse by skill / level — `/learn/:skill` with N4/N5 filter, list, edit, delete with confirm *(topic/source filters pending)*
+- [x] Browse by skill / level — `/learn/:skill` with All/N4/N5 filter plus topic/source filters, list, edit, delete with confirm
 - [x] Focused practice — `/practice` filter builder + drill session
 - [x] Global search — `/search` with debounced query, filters, grouped results *(step 10)*
 - [x] Add — single item form on `/add`; bulk import on `/import` *(nav link added)*
@@ -454,7 +456,7 @@ than a tab (§ decision log 2026-08-07).
 │    ├─ Kanji & Vocabulary | Grammar | Reading | Listening      │
 │    │    · Start lessons (daily cap) / Start reviews / Browse  │
 │    ├─ Lessons → /learn/lessons/:group                         │
-│    ├─ Browse → /learn/:skill (N4/N5 filter)                   │
+│    ├─ Browse → /learn/:skill (All/N4/N5 + topic/source filter)│
 │    └─ Item detail (/items/:id) — kanji compounds / word       │
 │       breakdown; reading/listening practice log               │
 ├──────────────────────────────────────────────────────────────┤

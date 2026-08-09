@@ -5,3 +5,8 @@ export {
   countTopics,
   type BulkDeleteKanjiResult,
 } from '@/lib/maintenance/deleteKanjiItems';
+export {
+  countUnsetKanjiReadings,
+  markUnsetKanjiReadingsAsNone,
+  type MarkUnsetKanjiReadingsResult,
+} from '@/lib/maintenance/fixKanjiReadings';
