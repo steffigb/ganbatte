@@ -23,6 +23,34 @@ export type LessonSessionState = {
   reload: () => void;
 };
 
+/** Remembers which item you were on within a lesson session, per group, so
+ * stepping away (e.g. to look up a word) and coming back — which unmounts and
+ * remounts this page — doesn't restart the session from the beginning.
+ * sessionStorage: resets on tab/window close, doesn't linger across days. */
+function positionStorageKey(group: LessonGroup): string {
+  return `ganbatte:lesson-position:${group}`;
+}
+
+function readSavedItemId(group: LessonGroup): string | null {
+  try {
+    return sessionStorage.getItem(positionStorageKey(group));
+  } catch {
+    return null;
+  }
+}
+
+function saveItemId(group: LessonGroup, itemId: string | null): void {
+  try {
+    if (itemId) {
+      sessionStorage.setItem(positionStorageKey(group), itemId);
+    } else {
+      sessionStorage.removeItem(positionStorageKey(group));
+    }
+  } catch {
+    // sessionStorage unavailable (e.g. private browsing) — resume just won't work
+  }
+}
+
 export function useLessonSession(group: LessonGroup): LessonSessionState {
   const { user } = useAuth();
   const [entries, setEntries] = useState<LessonQueueEntry[]>([]);
@@ -49,7 +77,6 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
       setIsLoading(true);
       setError(null);
       setIsComplete(false);
-      setCurrentIndex(0);
 
       try {
         const batch = await buildLessonBatch(user.id, group);
@@ -57,7 +84,13 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
           return;
         }
 
+        const savedItemId = readSavedItemId(group);
+        const restoredIndex = savedItemId
+          ? batch.entries.findIndex((entry) => entry.item.id === savedItemId)
+          : -1;
+
         setEntries(batch.entries);
+        setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
         setRemainingToday(batch.remainingToday);
         setIsComplete(batch.entries.length === 0);
       } catch (cause) {
@@ -77,6 +110,14 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
   }, [user, group, refreshKey]);
 
   const currentEntry = entries[currentIndex] ?? null;
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    saveItemId(group, currentEntry?.item.id ?? null);
+  }, [group, currentEntry, isLoading]);
 
   const next = useCallback(() => {
     setCurrentIndex((index) => Math.min(index + 1, entries.length));
@@ -99,13 +140,14 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
         user.id,
         entries.map((entry) => entry.item),
       );
+      saveItemId(group, null);
       setIsComplete(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Failed to save lessons');
     } finally {
       setIsSaving(false);
     }
-  }, [user, entries, isSaving]);
+  }, [user, group, entries, isSaving]);
 
   return useMemo(
     () => ({

@@ -9,6 +9,11 @@ import { createId } from '@/utils/id';
 
 export type LessonGroup = 'kanji-vocab' | 'grammar' | 'reading' | 'listening';
 
+/** How many new items a single Lessons session presents at once, independent of
+ * (and bounded by) the daily `newItemsPerDay` allowance — keeps one sitting short;
+ * starting another session the same day picks up where the daily allowance left off. */
+export const LESSON_SESSION_SIZE = 5;
+
 export const lessonGroups: readonly LessonGroup[] = [
   'kanji-vocab',
   'grammar',
@@ -172,6 +177,7 @@ export async function buildLessonBatch(
   const queue = buildLessonQueueForGroup(context, group);
   const completedToday = countLessonsCompletedToday(context);
   const remainingToday = Math.max(0, context.settings.newItemsPerDay - completedToday);
+  const sessionSize = Math.min(LESSON_SESSION_SIZE, remainingToday);
 
-  return { entries: queue.slice(0, remainingToday), remainingToday };
+  return { entries: queue.slice(0, sessionSize), remainingToday };
 }

@@ -4,6 +4,7 @@ import { isItemMastered } from '@/lib/topicProgress';
 import {
   buildLessonQueueForGroup,
   countLessonsCompletedToday,
+  LESSON_SESSION_SIZE,
   type LessonGroup,
 } from '@/features/learn/lessonService';
 import type { LearningItem } from '@/types/learningItem';
@@ -80,7 +81,7 @@ function buildCard(
     totalItems: items.length,
     masteredItems,
     lessonsAvailable,
-    lessonsAvailableToday: Math.min(lessonsAvailable, remainingToday),
+    lessonsAvailableToday: Math.min(lessonsAvailable, remainingToday, LESSON_SESSION_SIZE),
     reviewsDue: hasReviews ? countDue(context, types) : 0,
     hasReviews,
   };

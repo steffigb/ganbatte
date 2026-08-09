@@ -2,6 +2,8 @@ import { isItemMastered } from '@/lib/topicProgress';
 import { isSrsItemType } from '@/lib/srs/constants';
 import type { StudyContext } from '@/lib/study/loadStudyContext';
 import type { MasteryLevel, Skill } from '@/types/domain';
+import type { LearningItem } from '@/types/learningItem';
+import type { UserProgress } from '@/types/userProgress';
 
 const SKILL_WEIGHTS: Record<Skill, number> = {
   vocabulary: 0.25,
@@ -59,27 +61,36 @@ export function computeOverallReadiness(skillReadiness: SkillReadiness): number 
 export type MasteryCounts = Record<MasteryLevel, number>;
 
 /**
- * Counts of SRS-eligible items (expression/kanji/grammar) per mastery tier,
- * using each item's stored `UserProgress.masteryLevel` (items with no
- * progress row yet are `new`). Reading/listening items are excluded — they
- * never enter SRS, so they'd always show as `new` and just dilute the count.
- * A near-term counterpart to the slower-moving weighted readiness score:
- * `familiar` only requires a 7-day interval (no accuracy bar), so it moves
- * well before `mastered` does.
+ * Counts of the given items per mastery tier, using each item's stored
+ * `UserProgress.masteryLevel` (items with no progress row yet are `new`).
+ * Pure — takes items/progress directly so callers can scope to whatever
+ * subset they've already loaded (a whole `StudyContext`, or e.g. one
+ * skill+level's worth of items on a browse page).
  */
-export function computeMasteryCounts(context: StudyContext): MasteryCounts {
+export function tallyMasteryCounts(
+  items: LearningItem[],
+  progressByItemId: Map<string, UserProgress>,
+): MasteryCounts {
   const counts: MasteryCounts = { new: 0, learning: 0, familiar: 0, mastered: 0 };
 
-  for (const item of context.items) {
-    if (!isSrsItemType(item.type)) {
-      continue;
-    }
-
-    const level = context.progressByItemId.get(item.id)?.masteryLevel ?? 'new';
+  for (const item of items) {
+    const level = progressByItemId.get(item.id)?.masteryLevel ?? 'new';
     counts[level] += 1;
   }
 
   return counts;
+}
+
+/**
+ * Counts of SRS-eligible items (expression/kanji/grammar) per mastery tier.
+ * Reading/listening items are excluded — they never enter SRS, so they'd
+ * always show as `new` and just dilute the count. A near-term counterpart to
+ * the slower-moving weighted readiness score: `familiar` only requires a
+ * 7-day interval (no accuracy bar), so it moves well before `mastered` does.
+ */
+export function computeMasteryCounts(context: StudyContext): MasteryCounts {
+  const srsItems = context.items.filter((item) => isSrsItemType(item.type));
+  return tallyMasteryCounts(srsItems, context.progressByItemId);
 }
 
 export function daysUntilExam(examDate: string, fromDate = new Date()): number {

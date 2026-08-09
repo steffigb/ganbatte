@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { learnSkills, routes } from '@/app/routes.config';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { ItemList, useItems } from '@/features/items';
+import { ItemList, useItemMasteryCounts, useItems } from '@/features/items';
 import type { JlptLevel, Skill } from '@/types/domain';
 import { cn } from '@/utils/cn';
+
+/** Skills whose items get SRS progress at all — reading/listening never do, so a
+ * mastery breakdown for them would always show 100% "new" and just be noise. */
+const SKILLS_WITH_MASTERY: Skill[] = ['kanji', 'vocabulary', 'grammar'];
 
 export function LearnBrowsePage() {
   const { skill } = useParams<{ skill: string }>();
@@ -16,6 +20,8 @@ export function LearnBrowsePage() {
     skill: browseSkill,
     level: browseSkill ? level : undefined,
   });
+  const masteryCounts = useItemMasteryCounts(items);
+  const showMasteryCounts = browseSkill ? SKILLS_WITH_MASTERY.includes(browseSkill) : false;
 
   return (
     <PageLayout
@@ -59,6 +65,14 @@ export function LearnBrowsePage() {
               Add item
             </Link>
           </div>
+
+          {showMasteryCounts && masteryCounts && items.length > 0 ? (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {items.length} {browseSkill} · {masteryCounts.mastered} mastered ·{' '}
+              {masteryCounts.familiar} familiar · {masteryCounts.learning} learning ·{' '}
+              {masteryCounts.new} new
+            </p>
+          ) : null}
 
           <ItemList
             items={items}
