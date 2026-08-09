@@ -10,3 +10,8 @@ export {
   markUnsetKanjiReadingsAsNone,
   type MarkUnsetKanjiReadingsResult,
 } from '@/lib/maintenance/fixKanjiReadings';
+export {
+  countStartedItems,
+  resetSkillProgress,
+  type ResetProgressResult,
+} from '@/lib/maintenance/resetSkillProgress';

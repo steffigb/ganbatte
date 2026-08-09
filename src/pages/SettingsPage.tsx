@@ -8,9 +8,11 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   bulkDeleteKanjiItems,
   countKanjiItems,
+  countStartedItems,
   countTopics,
   countUnsetKanjiReadings,
   markUnsetKanjiReadingsAsNone,
+  resetSkillProgress,
 } from '@/lib/maintenance';
 import { upsertAppSettings } from '@/lib/db';
 import { ensureAppSettings } from '@/lib/settings';
@@ -30,6 +32,9 @@ export function SettingsPage() {
   const [unsetReadingCount, setUnsetReadingCount] = useState<number | null>(null);
   const [confirmFixReadingsOpen, setConfirmFixReadingsOpen] = useState(false);
   const [isFixingReadings, setIsFixingReadings] = useState(false);
+  const [startedCount, setStartedCount] = useState<number | null>(null);
+  const [confirmResetProgressOpen, setConfirmResetProgressOpen] = useState(false);
+  const [isResettingProgress, setIsResettingProgress] = useState(false);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -47,15 +52,17 @@ export function SettingsPage() {
     void (async () => {
       setIsLoadingCount(true);
       try {
-        const [kanji, topics, unsetReadings, loadedSettings] = await Promise.all([
+        const [kanji, topics, unsetReadings, started, loadedSettings] = await Promise.all([
           countKanjiItems(user.id),
           countTopics(user.id),
           countUnsetKanjiReadings(user.id),
+          countStartedItems(user.id),
           ensureAppSettings(user.id),
         ]);
         if (!cancelled) {
           setCounts({ kanji, topics });
           setUnsetReadingCount(unsetReadings);
+          setStartedCount(started);
           setSettings(loadedSettings);
         }
       } catch (cause) {
@@ -169,6 +176,35 @@ export function SettingsPage() {
     }
   }
 
+  async function handleConfirmResetProgress() {
+    if (!user) {
+      return;
+    }
+
+    setIsResettingProgress(true);
+    setFeedback(null);
+
+    try {
+      const result = await resetSkillProgress(user.id);
+      setStartedCount(0);
+      setConfirmResetProgressOpen(false);
+      setFeedback({
+        variant: 'success',
+        message:
+          result.itemCount > 0
+            ? `Reset ${result.itemCount} kanji/vocabulary/grammar item${result.itemCount === 1 ? '' : 's'} to not started, deleting ${result.reviewCount} review${result.reviewCount === 1 ? '' : 's'}. Click Sync now in the header to propagate the change to Supabase.`
+            : 'Nothing to reset — no items have started yet.',
+      });
+    } catch (cause) {
+      setFeedback({
+        variant: 'error',
+        message: cause instanceof Error ? cause.message : 'Failed to reset progress',
+      });
+    } finally {
+      setIsResettingProgress(false);
+    }
+  }
+
   const kanjiLabel =
     counts === null ? (isLoadingCount ? '…' : '—') : String(counts.kanji);
   const topicLabel =
@@ -178,6 +214,9 @@ export function SettingsPage() {
   const unsetReadingLabel =
     unsetReadingCount === null ? (isLoadingCount ? '…' : '—') : String(unsetReadingCount);
   const nothingToFix = unsetReadingCount === 0;
+  const startedLabel =
+    startedCount === null ? (isLoadingCount ? '…' : '—') : String(startedCount);
+  const nothingToReset = startedCount === 0;
 
   return (
     <PageLayout title="Settings" description="Exam date, daily goals, sync, and backup.">
@@ -278,6 +317,24 @@ export function SettingsPage() {
           >
             Delete all kanji and topics
           </Button>
+
+          <p className="mt-6 text-sm text-red-800 dark:text-red-300">
+            You currently have <strong>{startedLabel}</strong> kanji/vocabulary/grammar item
+            {startedCount === 1 ? '' : 's'} with SRS progress.
+          </p>
+          <p className="mt-1 text-sm text-red-800 dark:text-red-300">
+            Resets kanji, vocabulary, and grammar items to "not started" — deletes their SRS
+            progress and review history so they re-enter Lessons as brand-new. Items, topics,
+            and sources stay. Sync afterward to update Supabase.
+          </p>
+          <Button
+            type="button"
+            className="mt-4 bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
+            disabled={!user || isResettingProgress || nothingToReset}
+            onClick={() => setConfirmResetProgressOpen(true)}
+          >
+            Reset kanji, vocabulary &amp; grammar to not started
+          </Button>
         </section>
 
         <ConfirmDialog
@@ -295,6 +352,21 @@ export function SettingsPage() {
           onCancel={() => {
             if (!isDeleting) {
               setConfirmOpen(false);
+            }
+          }}
+        />
+
+        <ConfirmDialog
+          open={confirmResetProgressOpen}
+          title="Reset progress to not started?"
+          message={`Reset ${startedLabel} kanji/vocabulary/grammar item${startedCount === 1 ? '' : 's'} to not started? This deletes their SRS progress and full review history — it cannot be undone. Items themselves are kept and will re-enter Lessons as brand-new. Sync will propagate the change to Supabase.`}
+          confirmLabel="Reset progress"
+          cancelLabel="Keep"
+          isConfirming={isResettingProgress}
+          onConfirm={() => void handleConfirmResetProgress()}
+          onCancel={() => {
+            if (!isResettingProgress) {
+              setConfirmResetProgressOpen(false);
             }
           }}
         />
