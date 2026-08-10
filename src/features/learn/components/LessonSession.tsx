@@ -7,6 +7,7 @@ import { ReviewCard } from '@/features/review/components/ReviewCard';
 import { ReviewProgress } from '@/features/review/components/ReviewProgress';
 import type { LessonGroup } from '@/features/learn/lessonService';
 import { useLessonSession } from '@/features/learn/hooks/useLessonSession';
+import { LessonSetup } from '@/features/learn/components/LessonSetup';
 
 type LessonSessionProps = {
   group: LessonGroup;
@@ -19,25 +20,11 @@ export function LessonSession({ group }: LessonSessionProps) {
     return <LoadingSpinner label="Loading lessons…" />;
   }
 
-  if (session.isComplete) {
-    if (session.entries.length === 0) {
-      return (
-        <div className="space-y-4 rounded-xl border border-dashed border-slate-300 p-6 text-center dark:border-slate-700">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {session.remainingToday === 0
-              ? "You've reached today's new-item limit. Come back tomorrow, or raise the limit in Settings."
-              : 'No new items available right now.'}
-          </p>
-          <Link
-            to={routes.learnHub}
-            className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-          >
-            Back to Learn
-          </Link>
-        </div>
-      );
-    }
+  if (session.phase === 'setup') {
+    return <LessonSetup session={session} />;
+  }
 
+  if (session.phase === 'complete') {
     return (
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -54,6 +41,13 @@ export function LessonSession({ group }: LessonSessionProps) {
           >
             Start reviews
           </Link>
+          <button
+            type="button"
+            onClick={session.backToSetup}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+          >
+            Learn more
+          </button>
           <Link
             to={routes.learnHub}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"

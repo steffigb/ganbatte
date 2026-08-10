@@ -67,8 +67,8 @@
 - [x] **Focused practice** — `/practice` drills by skill / level / part of speech / topic / struggling items; grades never write to SRS (`features/practice/`)
 - [x] **Reading/listening activity log** — `study_sessions` via `logActivitySession()`; LogPracticeForm on item detail + Learn hub; weekly minutes on dashboard
 - [x] **Curated listening resources** — static N4 links on Listening hub card (`features/listening/resources.ts`)
-- [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`, `newItemsPerDay`)
-- [x] **Lessons pacing setting** — `newItemsPerDay` (default 8) editable on `/settings`; migration `20260801020000_new_items_per_day.sql`
+- [x] **Default app settings** — `ensureAppSettings()` (exam date, `n5RecapRatio`, `defaultLessonSize`)
+- [x] **Lesson size setting** — `defaultLessonSize` (default 8), the pre-filled count on the lesson setup screen, editable on `/settings`; migration `20260801020000_new_items_per_day.sql` (renamed to `default_lesson_size` in `20260810120000_default_lesson_size.sql`)
 - [x] **Global search** — `lib/search/`, `features/search/`; debounced `/search`, filters, grouped results, Japanese normalization
 - [x] **Delete UX** — `ConfirmDialog`; confirm + success feedback on item delete (`ItemList`); larger kanji in Learn/Search
 - [x] **Bulk data cleanup** — `lib/maintenance/deleteKanjiItems.ts`; Settings danger zone (delete all kanji + related SRS/links/examples/batches); Topics “Delete all topics”
@@ -94,6 +94,7 @@
 - [x] **Browse page: "All" level filter, per-row readings/topics/sources, working topic/source filters** (2026-08-09) — `/learn/:skill`'s level toggle gained an **All** option alongside N4/N5 (`useItems`'s `level` option is now `'all' | JlptLevel`; `listItemsBySkillAnyLevel()` added to `itemRepository.ts` for the no-level-pinned query, since the existing `[userId+level+skill]` index requires an exact level). Each row in `ItemList` now shows kanji onyomi/kunyomi (reusing `KanjiReadingsBlock`) plus linked topics/sources, bulk-loaded once per list — not per item — via new `loadItemRelationsByUser()` (`itemDetailService.ts`) and a `useItemRelations()` hook. The page also gained working **Topic** and **Source** filter dropdowns (options scoped to whatever's currently visible, reset on skill change), closing the gap between the page's existing "browse by skill, level, topic, and source" description and what it actually let you filter by
 - [x] **Settings: bulk-confirm unset kanji readings** (2026-08-09) — new "Kanji readings" section on `/settings` with a "Mark unset readings as confirmed absent" action (`lib/maintenance/fixKanjiReadings.ts` — `countUnsetKanjiReadings()`, `markUnsetKanjiReadingsAsNone()`), following the same count-preview + `ConfirmDialog` pattern as the existing "Delete all kanji and topics" danger-zone action. Flips onyomi/kunyomi `ReadingStatus` from `unset` ("not set") to `none` (confirmed absent, displays as "—") wherever a reading was never confirmed either way — the unset/none distinction itself is unchanged and intentional (ADR-015), this just cleans up existing data and stays available in Settings for re-use after future kanji imports
 - [x] **Settings: reset kanji/vocabulary/grammar progress to "not started"** (2026-08-09) — new "Reset kanji, vocabulary & grammar to not started" danger-zone action (`lib/maintenance/resetSkillProgress.ts` — `countStartedItems()`, `resetSkillProgress()`) deletes `UserProgress` and all `Review` history for every item in those three skills, so they lose SRS scheduling/mastery and re-enter Lessons as brand-new; items, topics, and sources themselves are untouched. Same count-preview + `ConfirmDialog` pattern as the other danger-zone actions; review history is deleted (not just orphaned) since nothing in the app displays reviews once their `UserProgress` is gone
+- [x] **Lesson setup screen: choose which and how many items leave "new"** (2026-08-10) — starting a lesson (`/learn/lessons/:group`) no longer jumps straight into a system-picked batch. `useLessonSession` now has a `phase: 'setup' | 'studying' | 'complete'`; on `'setup'` the new `LessonSetup` component shows the group's full ordered candidate queue (`loadLessonCandidates()`, `lessonService.ts`) filterable by level/topic/source (`filterLessonCandidates()`, reusing `deriveRelationOptions()`/`matchesRelationFilter()`/`LevelFilterTabs` extracted from `LearnBrowsePage` into `features/items/itemRelationFilters.ts`), with a count input and a per-item checkbox list (kanji-vocab entries whose kanji aren't learned yet show a "kanji not learned yet" hint via a new `LessonQueueEntry.kanjiReady` flag). Selecting a filter or changing the count re-seeds the auto-selection to the top N of the filtered list; ticking individual boxes only changes that item. **Removed the daily new-item cap entirely** — `newItemsPerDay`, `countLessonsCompletedToday()`, `LESSON_SESSION_SIZE`, and `buildLessonBatch()` are gone; the user's per-session pick is the only limit now, closing the "You've reached today's new-item limit" dead end and the divergence where `lessonService.ts`, `learnHubService.ts`, and `dashboardService.ts` each recomputed "available today" differently (§14.1a below, superseded). The settings field was renamed `newItemsPerDay` → `defaultLessonSize` (migration `20260810120000_default_lesson_size.sql`, column rename) since it's now just the setup screen's pre-filled count, not a cap. Session resume (`sessionStorage` position key) gained a matching selection key so reloading mid-session skips back to `'studying'` instead of re-showing setup
 
 ### Next up
 - [ ] Audio upload + playback (MVP step 12)
@@ -372,9 +373,9 @@ This replaces the earlier `item_examples` child-table design and the `item_kanji
 - [x] Dashboard — days until exam, readiness per skill, top weak topics, lessons available today, reading/listening minutes this week *(step 9; weekly plan pending)*
 - [x] Topic status — per-item via SRS; per-topic via TopicProgress *(step 8)*; topic detail `/topics/:id`
 - [x] "Study today" — SRS due (learned items only) + weakness boost + N5 recap *(step 9, §14.1)*
-- [x] Lessons before reviews — new items taught first; daily cap `newItemsPerDay` *(§14.1a)*
+- [x] Lessons before reviews — new items taught first; user picks which/how many via the lesson setup screen, no daily cap *(§14.1a)*
 - [x] Focused practice — skill/level/POS/topic/struggling filters; independent of SRS *(§14.1b)*
-- [ ] Exam date in settings UI — *default via `ensureAppSettings()` on first load; `/settings` has `newItemsPerDay` edit; exam date / theme / `n5RecapRatio` still step 14*
+- [ ] Exam date in settings UI — *default via `ensureAppSettings()` on first load; `/settings` has `defaultLessonSize` edit; exam date / theme / `n5RecapRatio` still step 14*
 - [ ] Simple weekly plan from weaknesses + remaining time
 - [x] Study session log for reading/listening practice — `study_sessions` via `activityService` *(generic SRS session logging still open)*
 
@@ -485,7 +486,7 @@ than a tab (§ decision log 2026-08-07).
 | For | Brand-new items (no `user_progress` yet) | Items already due for spaced-repetition review | Any items, on demand |
 | Grading | None — just Next/Back through content | Again/Hard/Good/Easy — drives SM-2 scheduling | Knew it/Forgot it — session-only, not persisted |
 | Writes to SRS? | Creates the *initial* `user_progress` row on finish (§14.1a) | Yes — every grade is the real scheduling signal (§14.1, §14.5) | **Never** — no `reviews` row, no scheduling change (§14.1b) |
-| Purpose | First exposure to new material, paced by `newItemsPerDay` | The actual spaced-repetition queue that determines readiness/mastery | Extra, judgment-free reps (cramming, weak topics) without disturbing SRS intervals |
+| Purpose | First exposure to new material, batch chosen per session on the lesson setup screen | The actual spaced-repetition queue that determines readiness/mastery | Extra, judgment-free reps (cramming, weak topics) without disturbing SRS intervals |
 
 ---
 
@@ -756,7 +757,7 @@ AppSettings {
   examDate: string                // "2026-12-06"
   dailyGoalMinutes: number        // e.g. 45
   n5RecapRatio: number            // 0.2 = 20%
-  newItemsPerDay: number          // max brand-new items introduced via Lessons/day (default 8)
+  defaultLessonSize: number       // pre-filled batch size on the lesson setup screen (default 8)
   locale: "de"
   theme: "light" | "dark" | "system"
   srsAlgorithm?: "sm2" | "fsrs"   // default "sm2"; user opts in to FSRS (ADR-014)
@@ -915,6 +916,8 @@ Confirmed applied via `supabase migration list` (2026-08-09; PLAN.md had gone st
 - [x] `20260802000000_grammar_explanation_formation.sql` — adds nullable `explanation`, `formation TEXT` to `learning_items` (§8.4.5)
 
 No migrations pending as of 2026-08-09 — local and remote are fully in sync (all 9 files, confirmed via `supabase migration list`).
+
+- [ ] `20260810120000_default_lesson_size.sql` — renames `app_settings.new_items_per_day` → `default_lesson_size` (falls back to `ADD COLUMN IF NOT EXISTS ... DEFAULT 8` if the column is already gone by the time this runs); no longer a daily cap, just the lesson setup screen's pre-filled count (§14.1a). Written 2026-08-10, not yet applied — per ADR-013, run by the user via `supabase db push`, not by the AI agent
 
 **Migration history repair (2026-07-31):** Two orphaned migration versions (`20260721013000_item_examples`, `20260721014500_item_examples_reading_unique`) were applied on remote during the earlier `item_examples` design, then their local files were deleted when compounds were reworked as derived vocabulary (2026-07-30 rework). This caused `supabase db push` to fail with "Remote migration versions not found in local migrations directory." Fixed via `supabase migration repair --status reverted 20260721013000 20260721014500`, then `supabase db push` completed cleanly.
 
@@ -1236,18 +1239,17 @@ Reviews only — brand-new items are **not** mixed into this queue (see §14.1a 
 **Implementation (step 9):**
 - `lib/study/loadStudyContext.ts` — shared data for dashboard + queue + lessons
 - `features/review/buildReviewQueue.ts` — `buildReviewQueueFromContext()`
-- `lib/settings/ensureAppSettings.ts` — defaults: exam `2026-12-06`, `n5RecapRatio` 0.2, `newItemsPerDay` 8
+- `lib/settings/ensureAppSettings.ts` — defaults: exam `2026-12-06`, `n5RecapRatio` 0.2, `defaultLessonSize` 8
 
 ### 14.1a Lessons (new items before reviews)
 
 Brand-new items (no `user_progress` row) are Lessons material, not reviews.
 
 1. User opens `/learn` hub → picks a group → `/learn/lessons/:group`
-2. Teaching UI shows item content (reuses review card, always revealed); **Back** / **Next** / **Finish lesson** — no grading. All entries for the session are loaded upfront, so **Back** just steps `currentIndex` back (bounded at 0) with no persistence involved — lets you flip back to an earlier item to compare confusable points (e.g. the different uses of に) before finishing
-3. On finish, `completeLessons()` creates the initial `user_progress` row (`createInitialProgressFields()`, `nextReviewAt = now`) → item becomes review-eligible
-4. **Session size (2026-08-08):** each session presents at most `LESSON_SESSION_SIZE = 5` items (`lessonService.ts`), independent of the daily `newItemsPerDay` allowance — keeps one sitting short; starting another session the same day continues from wherever the daily allowance is (`remainingToday` itself is unchanged, only the per-session slice is capped)
-5. **Resume position (2026-08-08):** `useLessonSession` persists the current item's id to `sessionStorage` (keyed per group) and restores it on mount — since nothing is saved to `user_progress` until Finish, navigating away mid-session (e.g. to look up a word) previously unmounted the page and always restarted the session at index 0; now it resumes where you left off within the same browser session. Cleared on successful Finish
-6. Daily pacing: `newItemsPerDay` (Settings; default 8) shared across all lesson groups; `countLessonsCompletedToday()` counts progress rows created today
+2. **Setup screen (2026-08-10, supersedes the 2026-08-08 fixed session size below):** `useLessonSession` starts in `phase: 'setup'`, rendering `LessonSetup`. It shows the group's full ordered candidate queue (`loadLessonCandidates()`), filterable by level/topic/source (`filterLessonCandidates()`, sharing `deriveRelationOptions()`/`matchesRelationFilter()`/`LevelFilterTabs` with `LearnBrowsePage` via `features/items/itemRelationFilters.ts`), a count input pre-filled from `AppSettings.defaultLessonSize`, and a per-item checkbox list — kanji-vocab entries whose kanji aren't learned yet carry `kanjiReady: false` and show a muted hint. Changing a filter or the count re-seeds the auto-selected top N; ticking a box only changes that item. **Start lesson (N)** moves to `phase: 'studying'` with exactly the selected items, in queue order. There is no daily cap — the user's selection is the only limit
+3. Teaching UI shows item content (reuses review card, always revealed); **Back** / **Next** / **Finish lesson** — no grading. All entries for the session are loaded upfront, so **Back** just steps `currentIndex` back (bounded at 0) with no persistence involved — lets you flip back to an earlier item to compare confusable points (e.g. the different uses of に) before finishing
+4. On finish, `completeLessons()` creates the initial `user_progress` row (`createInitialProgressFields()`, `nextReviewAt = now`) → item becomes review-eligible; phase moves to `'complete'`, with a "Learn more" action back to setup (refetches candidates so just-learned items drop out) alongside "Start reviews" / "Back to Learn"
+5. **Resume position:** `useLessonSession` persists the current item's id (`ganbatte:lesson-position:${group}`) and the studying selection (`ganbatte:lesson-selection:${group}`) to `sessionStorage` — since nothing is saved to `user_progress` until Finish, navigating away mid-session (e.g. to look up a word) previously unmounted the page; on remount, if a stored selection exists and every item in it is still unlearned, the session skips setup and resumes `'studying'` at the saved index. Both keys are cleared on Finish and on returning to setup
 
 **Kanji & Vocabulary lesson ordering** (`buildKanjiVocabLessonQueue` in `features/learn/lessonService.ts`), recomputed live from known kanji (`extractKanjiCharacters`):
 
@@ -1434,10 +1436,10 @@ Use OGG or lower bitrate to save space if needed.
 10c. [x] Kanji onyomi/kunyomi tri-state readings — types, form, review UI, sync mappers, migration file ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
 11. [x] Bulk import CSV — `lib/import/`, `/import` UI, kanji onyomi/kunyomi, mediopunkt meanings (§12)
 11b. [x] Compounds as derived vocabulary — kanji ↔ compound relationship computed live by text search, not stored; `/items/:id` detail page ([ADR-015](#adr-015-kanji-readings--onyomikunyomi-only-no-standalone-reading-compounds-derived-live))
-11c. [x] Learn hub + lessons-before-reviews + focused practice + reading/listening activity logging — topic detail, `newItemsPerDay`, curated listening resources (§14.1a–c)
+11c. [x] Learn hub + lessons-before-reviews + focused practice + reading/listening activity logging — topic detail, `defaultLessonSize`, curated listening resources (§14.1a–c)
 12. [ ] Audio upload + playback (Storage)
 13. [ ] JSON export/import (backup)
-14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(partial: `newItemsPerDay` + danger zone done; sync status in header)*
+14. [ ] Settings page UI — exam date, theme, `n5RecapRatio` edit *(partial: `defaultLessonSize` + danger zone done; sync status in header)*
 15. [ ] Polish — dark mode, error handling *(CSV templates shipped)*
 
 ---
@@ -1622,7 +1624,7 @@ All IO and domain logic without React:
 | `lib/topicProgress/` | TopicProgress aggregation (step 8); `topNeedsAttentionTopics()` for study queue |
 | `lib/dashboard/` | Skill/overall readiness scores (step 9) |
 | `lib/study/` | Shared `loadStudyContext()` for dashboard + review queue + lessons |
-| `lib/settings/` | `ensureAppSettings()` defaults (exam date, n5RecapRatio, newItemsPerDay) |
+| `lib/settings/` | `ensureAppSettings()` defaults (exam date, n5RecapRatio, defaultLessonSize) |
 | `features/dashboard/` | Dashboard widgets, `useDashboard`, `loadDashboardData()` |
 | `features/learn/` | Learn hub, lesson queue/ordering, lesson session UI |
 | `features/practice/` | Focused practice filters + session (no SRS writes) |
@@ -1896,6 +1898,7 @@ const id = createId();
 | 2026-08-08 | **Learn hub "Start lessons (N)" button label fixed to match the new session size** — after the change above, the user still saw "Start lessons (20)" on the hub. Root cause: `learnHubService.ts`'s `buildCard()` computes `lessonsAvailableToday` independently from `buildLessonBatch()` — it only ever capped at the daily `remainingToday`, never at `LESSON_SESSION_SIZE`, so the button label went stale relative to what clicking it actually produces. Exported `LESSON_SESSION_SIZE` from `lessonService.ts` and added it to the `Math.min(...)` in `buildCard()`. Deliberately did **not** touch `dashboardService.ts`'s separate "New lessons today" tile computation (`Math.min(totalLessonsAvailable, remainingToday)`) — that one is meant to show the day's total runway across all groups, not a single session's size |
 | 2026-08-08 | **Per-skill mastery breakdown added to the browse page** — user asked how to see the total count and status of e.g. N5 kanji; nothing in the app showed that (Dashboard's "Readiness by skill" gives a kanji-only %, but no counts or tier breakdown; the Learn hub's stats combine kanji+vocabulary). Rather than build a new computation, extracted the existing dashboard tally into a pure `tallyMasteryCounts(items, progressByItemId)` (`lib/dashboard/readiness.ts`), with `computeMasteryCounts(context)` now just filtering to SRS types and calling it — same function, reusable outside a full `StudyContext`. New `useItemMasteryCounts(items)` hook (`features/items/hooks/`) loads progress for whatever items a page already has and tallies them; wired into `LearnBrowsePage` to show `N kanji · X mastered · Y familiar · Z learning · W new` above the item list, scoped to the currently selected skill+level. Hidden for reading/listening (same rationale as the dashboard card, §14.3) |
 | 2026-08-09 | **All pending Supabase migrations confirmed applied** — owner ran `supabase migration list`; all 9 migration files (through `20260802000000_grammar_explanation_formation`) show matching Local/Remote timestamps, nothing pending. PLAN.md's migration-status tracking had been unreliable for weeks (several "pending" notes turned out to already be applied, per the 2026-08-01 decision log entries) since the agent is barred from running `supabase db push`/`migration list` itself (ADR-013) and could only track status second-hand from the owner; cleared all stale "pending"/"may already be applied" hedges across the status table, completed checklist, and §9.6 now that there's a direct confirmation |
+| 2026-08-10 | **Lesson batches are now user-chosen (which items and how many), daily new-item cap removed** — user wanted to decide themselves how many and which items leave "new" per Lessons session, instead of a fixed system-picked batch bounded by a daily allowance. Superseded the 2026-08-08 entries above: `LESSON_SESSION_SIZE` and the daily `newItemsPerDay` cap (`countLessonsCompletedToday()`, `buildLessonBatch()`) are gone entirely. Added a setup phase (`useLessonSession`'s new `phase: 'setup' \| 'studying' \| 'complete'`, rendered by the new `LessonSetup` component) that shows the group's full ordered candidate queue, filterable by level/topic/source and reusable checkbox selection, with a count input pre-filled from the renamed `AppSettings.defaultLessonSize` (was `newItemsPerDay`, migration `20260810120000_default_lesson_size.sql`). Extracted the topic/source filter logic and level-tabs control out of `LearnBrowsePage` into `features/items/itemRelationFilters.ts` and `LevelFilterTabs` so both screens share one implementation. This also resolves the divergence flagged in the 2026-08-08 entries where `lessonService.ts`, `learnHubService.ts`, and `dashboardService.ts` each computed "lessons available" differently — there's now a single `lessonsAvailable` count with no daily-remaining variant to drift out of sync |
 
 ---
 

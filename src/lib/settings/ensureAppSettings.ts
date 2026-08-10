@@ -2,9 +2,9 @@ import { getAppSettingsByUser, upsertAppSettings } from '@/lib/db';
 import {
   DEFAULT_DAILY_GOAL_MINUTES,
   DEFAULT_EXAM_DATE,
+  DEFAULT_LESSON_SIZE,
   DEFAULT_LOCALE,
   DEFAULT_N5_RECAP_RATIO,
-  DEFAULT_NEW_ITEMS_PER_DAY,
 } from '@/lib/settings/constants';
 import type { AppSettings } from '@/types/appSettings';
 import { nowIso } from '@/utils/date';
@@ -13,10 +13,13 @@ import { createId } from '@/utils/id';
 export async function ensureAppSettings(userId: string): Promise<AppSettings> {
   const existing = await getAppSettingsByUser(userId);
   if (existing) {
-    if (existing.newItemsPerDay === undefined) {
+    if (existing.defaultLessonSize === undefined) {
+      // Rows cached before the rename hold the value under `newItemsPerDay`
+      // (back when it was a daily cap) — carry the user's number over.
+      const { newItemsPerDay, ...rest } = existing as AppSettings & { newItemsPerDay?: number };
       const backfilled: AppSettings = {
-        ...existing,
-        newItemsPerDay: DEFAULT_NEW_ITEMS_PER_DAY,
+        ...rest,
+        defaultLessonSize: newItemsPerDay ?? DEFAULT_LESSON_SIZE,
       };
       await upsertAppSettings(backfilled);
       return backfilled;
@@ -32,7 +35,7 @@ export async function ensureAppSettings(userId: string): Promise<AppSettings> {
     examDate: DEFAULT_EXAM_DATE,
     dailyGoalMinutes: DEFAULT_DAILY_GOAL_MINUTES,
     n5RecapRatio: DEFAULT_N5_RECAP_RATIO,
-    newItemsPerDay: DEFAULT_NEW_ITEMS_PER_DAY,
+    defaultLessonSize: DEFAULT_LESSON_SIZE,
     locale: DEFAULT_LOCALE,
     theme: 'system',
     createdAt: timestamp,

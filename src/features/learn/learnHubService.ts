@@ -1,12 +1,7 @@
 import { isSrsItemType } from '@/lib/srs';
 import { loadStudyContext, type StudyContext } from '@/lib/study';
 import { isItemMastered } from '@/lib/topicProgress';
-import {
-  buildLessonQueueForGroup,
-  countLessonsCompletedToday,
-  LESSON_SESSION_SIZE,
-  type LessonGroup,
-} from '@/features/learn/lessonService';
+import { buildLessonQueueForGroup, type LessonGroup } from '@/features/learn/lessonService';
 import type { LearningItem } from '@/types/learningItem';
 import { nowIso } from '@/utils/date';
 
@@ -17,8 +12,6 @@ export type LearnHubCard = {
   masteredItems: number;
   /** Unlearned items still in this group's lesson queue. */
   lessonsAvailable: number;
-  /** How many of those fit under today's new-items cap. */
-  lessonsAvailableToday: number;
   reviewsDue: number;
   hasReviews: boolean;
 };
@@ -62,11 +55,7 @@ function countDue(context: StudyContext, types: LearningItem['type'][]): number 
   return count;
 }
 
-function buildCard(
-  context: StudyContext,
-  group: LessonGroup,
-  remainingToday: number,
-): LearnHubCard {
+function buildCard(context: StudyContext, group: LessonGroup): LearnHubCard {
   const types = GROUP_ITEM_TYPES[group];
   const items = context.items.filter((item) => types.includes(item.type));
   const masteredItems = items.filter((item) =>
@@ -81,7 +70,6 @@ function buildCard(
     totalItems: items.length,
     masteredItems,
     lessonsAvailable,
-    lessonsAvailableToday: Math.min(lessonsAvailable, remainingToday, LESSON_SESSION_SIZE),
     reviewsDue: hasReviews ? countDue(context, types) : 0,
     hasReviews,
   };
@@ -89,9 +77,5 @@ function buildCard(
 
 export async function loadLearnHubCards(userId: string): Promise<LearnHubCard[]> {
   const context = await loadStudyContext(userId);
-  const remainingToday = Math.max(
-    0,
-    context.settings.newItemsPerDay - countLessonsCompletedToday(context),
-  );
-  return learnHubGroups.map((group) => buildCard(context, group, remainingToday));
+  return learnHubGroups.map((group) => buildCard(context, group));
 }

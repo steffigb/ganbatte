@@ -8,7 +8,10 @@ export {
   buildLessonQueueForGroup,
   buildSimpleLessonQueue,
   completeLessons,
+  filterLessonCandidates,
   lessonGroups,
+  loadLessonCandidates,
+  type LessonCandidates,
   type LessonGroup,
   type LessonQueueEntry,
 } from '@/features/learn/lessonService';

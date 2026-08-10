@@ -1,5 +1,5 @@
 import type { AppSettings } from '@/types/appSettings';
-import { DEFAULT_NEW_ITEMS_PER_DAY } from '@/lib/settings/constants';
+import { DEFAULT_LESSON_SIZE } from '@/lib/settings/constants';
 import type { ImportBatch } from '@/types/importBatch';
 import type { ItemSource, ItemTopic } from '@/types/itemRelations';
 import type { LearningItem } from '@/types/learningItem';
@@ -338,9 +338,10 @@ export function appSettingsFromRemote(row: RemoteRow): AppSettings {
     examDate: String(row.exam_date),
     dailyGoalMinutes: Number(row.daily_goal_minutes),
     n5RecapRatio: Number(row.n5_recap_ratio),
-    newItemsPerDay: row.new_items_per_day === null || row.new_items_per_day === undefined
-      ? DEFAULT_NEW_ITEMS_PER_DAY
-      : Number(row.new_items_per_day),
+    defaultLessonSize:
+      row.default_lesson_size === null || row.default_lesson_size === undefined
+        ? DEFAULT_LESSON_SIZE
+        : Number(row.default_lesson_size),
     locale: String(row.locale),
     theme: row.theme as AppSettings['theme'],
     createdAt: String(row.created_at),
@@ -355,7 +356,7 @@ export function appSettingsToRemote(settings: AppSettings): RemoteRow {
     exam_date: settings.examDate,
     daily_goal_minutes: settings.dailyGoalMinutes,
     n5_recap_ratio: settings.n5RecapRatio,
-    new_items_per_day: settings.newItemsPerDay,
+    default_lesson_size: settings.defaultLessonSize,
     locale: settings.locale,
     theme: settings.theme,
     created_at: settings.createdAt,

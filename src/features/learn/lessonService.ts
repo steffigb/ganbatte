@@ -2,17 +2,19 @@ import { extractKanjiCharacters } from '@/utils/japaneseText';
 import { createInitialProgressFields } from '@/lib/srs';
 import { getUserProgressByItem, upsertUserProgress } from '@/lib/db';
 import { loadStudyContext, type StudyContext } from '@/lib/study';
+import {
+  loadItemRelationsByUser,
+  matchesRelationFilter,
+  type ItemRelations,
+  type LevelFilter,
+  type RelationFilter,
+} from '@/features/items';
 import type { LearningItem } from '@/types/learningItem';
 import type { UserProgress } from '@/types/userProgress';
 import { nowIso } from '@/utils/date';
 import { createId } from '@/utils/id';
 
 export type LessonGroup = 'kanji-vocab' | 'grammar' | 'reading' | 'listening';
-
-/** How many new items a single Lessons session presents at once, independent of
- * (and bounded by) the daily `newItemsPerDay` allowance — keeps one sitting short;
- * starting another session the same day picks up where the daily allowance left off. */
-export const LESSON_SESSION_SIZE = 5;
 
 export const lessonGroups: readonly LessonGroup[] = [
   'kanji-vocab',
@@ -23,6 +25,9 @@ export const lessonGroups: readonly LessonGroup[] = [
 
 export type LessonQueueEntry = {
   item: LearningItem;
+  /** False only for kanji-vocab entries whose kanji aren't learned yet — shown
+   * as a hint on the setup screen; they still sort last, nothing hides them. */
+  kanjiReady: boolean;
 };
 
 function isLearned(context: StudyContext, itemId: string): boolean {
@@ -86,16 +91,19 @@ export function buildKanjiVocabLessonQueue(context: StudyContext): LessonQueueEn
     }
   }
 
-  const ordered = [
-    ...sortStable(n5Kanji),
-    ...sortStable(n5VocabReady),
-    ...sortStable(n4Kanji),
-    ...sortStable(n4VocabReady),
-    ...byLevelThenStable(kanaOnly),
-    ...byLevelThenStable(blocked),
-  ];
+  const ready = (items: LearningItem[]): LessonQueueEntry[] =>
+    items.map((item) => ({ item, kanjiReady: true }));
+  const notReady = (items: LearningItem[]): LessonQueueEntry[] =>
+    items.map((item) => ({ item, kanjiReady: false }));
 
-  return ordered.map((item) => ({ item }));
+  return [
+    ...ready(sortStable(n5Kanji)),
+    ...ready(sortStable(n5VocabReady)),
+    ...ready(sortStable(n4Kanji)),
+    ...ready(sortStable(n4VocabReady)),
+    ...ready(byLevelThenStable(kanaOnly)),
+    ...notReady(byLevelThenStable(blocked)),
+  ];
 }
 
 const LESSON_GROUP_TO_ITEM_TYPE: Record<Exclude<LessonGroup, 'kanji-vocab'>, LearningItem['type']> = {
@@ -113,7 +121,7 @@ export function buildSimpleLessonQueue(
     (item) => item.type === itemType && !isLearned(context, item.id),
   );
 
-  return byLevelThenStable(newItems).map((item) => ({ item }));
+  return byLevelThenStable(newItems).map((item) => ({ item, kanjiReady: true }));
 }
 
 export function buildLessonQueueForGroup(
@@ -127,16 +135,43 @@ export function buildLessonQueueForGroup(
   return buildSimpleLessonQueue(context, group);
 }
 
-function todayKey(iso: string): string {
-  return iso.slice(0, 10);
+export type LessonCandidates = {
+  /** Full ordered queue for the group — the default suggestion, unfiltered. */
+  entries: LessonQueueEntry[];
+  relations: Map<string, ItemRelations>;
+  defaultLessonSize: number;
+};
+
+/** Everything the lesson setup screen needs: the ordered candidate queue for
+ * `group`, plus topic/source relations for filtering and the pre-filled batch
+ * size from settings. The user picks the final subset from this pool. */
+export async function loadLessonCandidates(
+  userId: string,
+  group: LessonGroup,
+): Promise<LessonCandidates> {
+  const [context, relations] = await Promise.all([
+    loadStudyContext(userId),
+    loadItemRelationsByUser(userId),
+  ]);
+
+  return {
+    entries: buildLessonQueueForGroup(context, group),
+    relations,
+    defaultLessonSize: context.settings.defaultLessonSize,
+  };
 }
 
-/** Lesson completions create the initial user_progress row for each item,
- * counted toward the daily new-item cap. Items become review-eligible
- * immediately (nextReviewAt = now), matching prior "new item" behavior. */
-export function countLessonsCompletedToday(context: StudyContext): number {
-  const today = todayKey(nowIso());
-  return context.userProgress.filter((progress) => todayKey(progress.createdAt) === today).length;
+export function filterLessonCandidates(
+  entries: LessonQueueEntry[],
+  relations: Map<string, ItemRelations> | null,
+  filters: { level: LevelFilter } & RelationFilter,
+): LessonQueueEntry[] {
+  return entries.filter(({ item }) => {
+    if (filters.level !== 'all' && item.level !== filters.level) {
+      return false;
+    }
+    return matchesRelationFilter(item.id, relations, filters);
+  });
 }
 
 export async function completeLessons(
@@ -167,17 +202,4 @@ export async function completeLessons(
   }
 
   return created;
-}
-
-export async function buildLessonBatch(
-  userId: string,
-  group: LessonGroup,
-): Promise<{ entries: LessonQueueEntry[]; remainingToday: number }> {
-  const context = await loadStudyContext(userId);
-  const queue = buildLessonQueueForGroup(context, group);
-  const completedToday = countLessonsCompletedToday(context);
-  const remainingToday = Math.max(0, context.settings.newItemsPerDay - completedToday);
-  const sessionSize = Math.min(LESSON_SESSION_SIZE, remainingToday);
-
-  return { entries: queue.slice(0, sessionSize), remainingToday };
 }

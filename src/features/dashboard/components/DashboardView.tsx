@@ -75,13 +75,13 @@ export function DashboardView() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            New lessons today
+            Not started yet
           </p>
           <p className="mt-1 text-3xl font-semibold text-slate-900 dark:text-slate-100">
-            {data.lessonsAvailableToday}
+            {data.lessonsAvailable}
           </p>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Learn new items before they enter reviews
+            Pick what to learn next
           </p>
           <Link to={routes.learnHub} className="mt-3 inline-block">
             <Button type="button">Go to Learn</Button>

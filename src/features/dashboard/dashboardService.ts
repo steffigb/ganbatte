@@ -10,10 +10,7 @@ import {
   buildReviewQueueFromContext,
   countDueCards,
 } from '@/features/review/buildReviewQueue';
-import {
-  buildLessonQueueForGroup,
-  countLessonsCompletedToday,
-} from '@/features/learn/lessonService';
+import { buildLessonQueueForGroup } from '@/features/learn/lessonService';
 import { learnHubGroups } from '@/features/learn/learnHubService';
 import { getActivityMinutesThisWeek } from '@/features/activity/activityService';
 import { topNeedsAttentionTopics } from '@/lib/topicProgress';
@@ -35,7 +32,7 @@ export type DashboardData = {
   weakTopics: WeakTopicSummary[];
   queueSize: number;
   dueCount: number;
-  lessonsAvailableToday: number;
+  lessonsAvailable: number;
   readingListeningMinutesThisWeek: number;
 };
 
@@ -57,13 +54,9 @@ export async function loadDashboardData(userId: string): Promise<DashboardData> 
     })
     .filter((entry): entry is WeakTopicSummary => entry !== null);
 
-  const totalLessonsAvailable = learnHubGroups.reduce(
+  const lessonsAvailable = learnHubGroups.reduce(
     (sum, group) => sum + buildLessonQueueForGroup(context, group).length,
     0,
-  );
-  const remainingToday = Math.max(
-    0,
-    context.settings.newItemsPerDay - countLessonsCompletedToday(context),
   );
   const readingListeningMinutesThisWeek = await getActivityMinutesThisWeek(userId);
 
@@ -76,7 +69,7 @@ export async function loadDashboardData(userId: string): Promise<DashboardData> 
     weakTopics,
     queueSize: queue.length,
     dueCount: countDueCards(context),
-    lessonsAvailableToday: Math.min(totalLessonsAvailable, remainingToday),
+    lessonsAvailable,
     readingListeningMinutesThisWeek,
   };
 }

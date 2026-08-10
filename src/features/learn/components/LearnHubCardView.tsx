@@ -39,7 +39,7 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
           to={routes.lessons(card.group)}
           className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
         >
-          Start lessons ({card.lessonsAvailableToday})
+          Start lessons ({card.lessonsAvailable})
         </Link>
         {card.hasReviews ? (
           <Link
