@@ -10,6 +10,7 @@ import { textIncludesQuery, textStartsWithQuery } from '@/utils/japaneseText';
 import {
   emptySearchResults,
   type ItemSearchResult,
+  type ItemSearchSource,
   type SearchFilters,
   type SearchItemGroupKey,
   type SearchResults,
@@ -25,6 +26,7 @@ export type SearchLocalInput = {
   gradesByItemId: Map<string, ReviewGrade[]>;
   topicProgressById: Map<string, TopicProgress>;
   sourceMetaByItemId: Map<string, string[]>;
+  sourceEntriesByItemId: Map<string, ItemSearchSource[]>;
   now: string;
 };
 
@@ -160,9 +162,7 @@ function pushItemResult(
 
 export function searchLocal(input: SearchLocalInput): SearchResults {
   const query = input.query.trim();
-  if (!query) {
-    return emptySearchResults();
-  }
+  const hasQuery = query.length > 0;
 
   const results = emptySearchResults();
 
@@ -182,7 +182,7 @@ export function searchLocal(input: SearchLocalInput): SearchResults {
       }
 
       const fields = [topic.name, topic.description];
-      if (!textIncludesQuery(query, ...fields)) {
+      if (hasQuery && !textIncludesQuery(query, ...fields)) {
         continue;
       }
 
@@ -238,7 +238,7 @@ export function searchLocal(input: SearchLocalInput): SearchResults {
 
     const sourceMeta = input.sourceMetaByItemId.get(item.id);
     const fields = getItemSearchFields(item, sourceMeta);
-    if (!textIncludesQuery(query, ...fields)) {
+    if (hasQuery && !textIncludesQuery(query, ...fields)) {
       continue;
     }
 
@@ -248,6 +248,7 @@ export function searchLocal(input: SearchLocalInput): SearchResults {
       masteryLevel,
       needsAttention,
       startsWithQuery: textStartsWithQuery(query, item.japanese, item.reading),
+      sources: input.sourceEntriesByItemId.get(item.id) ?? [],
     };
 
     pushItemResult(results, groupKeyForItemType(item.type), itemResult);
@@ -299,6 +300,7 @@ export function findSimilarItemsLocal(
       masteryLevel: resolveItemMasteryLevel(progress),
       needsAttention: doesItemNeedAttention(progress, grades, input.now),
       startsWithQuery: textStartsWithQuery(query, item.japanese, item.reading),
+      sources: input.sourceEntriesByItemId.get(item.id) ?? [],
     });
   }
 

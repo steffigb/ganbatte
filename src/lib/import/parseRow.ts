@@ -5,6 +5,7 @@ import {
   parseMeaningFields,
   parsePartOfSpeech,
   parseSkill,
+  parseSourceList,
   parseTags,
   parseTopicNames,
   parseTransitivity,
@@ -52,6 +53,9 @@ export function parseImportRow(
     return { ok: false, errors };
   }
 
+  const sourceLabels = parseSourceList(getCellValue(raw, columnMap, 'source'));
+  const sourceRefs = parseSourceList(getCellValue(raw, columnMap, 'source_ref'));
+
   const base: ParsedImportRow = {
     rowNumber,
     type,
@@ -66,8 +70,7 @@ export function parseImportRow(
     notes: getCellValue(raw, columnMap, 'notes'),
     topicNames: parseTopicNames(getCellValue(raw, columnMap, 'topics')),
     tags: parseTags(getCellValue(raw, columnMap, 'tags')),
-    sourceLabel: getCellValue(raw, columnMap, 'source'),
-    sourceRef: getCellValue(raw, columnMap, 'source_ref'),
+    sources: sourceLabels.map((label, index) => ({ label, reference: sourceRefs[index] })),
   };
 
   if (type === 'kanji') {

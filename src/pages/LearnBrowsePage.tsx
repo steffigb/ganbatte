@@ -39,7 +39,7 @@ export function LearnBrowsePage() {
     setRelationFilter(ALL_RELATIONS);
   }
 
-  const { topicOptions, sourceOptions } = useMemo(
+  const { topicOptions, sourceOptions, sourceRefOptions } = useMemo(
     () => deriveRelationOptions(items, relations),
     [items, relations],
   );
@@ -98,6 +98,21 @@ export function LearnBrowsePage() {
                 options={[
                   { value: 'all', label: 'All sources' },
                   ...sourceOptions.map(([id, label]) => ({ value: id, label })),
+                ]}
+              />
+            ) : null}
+            {sourceRefOptions.length > 0 ? (
+              <Select
+                id="browse-source-ref"
+                label="Reference"
+                className="w-auto"
+                value={relationFilter.sourceRef}
+                onChange={(event) =>
+                  setRelationFilter((current) => ({ ...current, sourceRef: event.target.value }))
+                }
+                options={[
+                  { value: 'all', label: 'All references' },
+                  ...sourceRefOptions.map(([ref, label]) => ({ value: ref, label })),
                 ]}
               />
             ) : null}

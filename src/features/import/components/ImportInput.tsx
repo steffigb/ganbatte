@@ -36,6 +36,12 @@ export function ImportInput({
           <code className="text-xs">meaning</code>. Kanji reading cells: empty = not set,{' '}
           <code className="text-xs">-</code> = none, text = value.
         </p>
+        <p className="mt-1">
+          Multiple sources in one cell: separate with <code className="text-xs">;</code>, e.g.{' '}
+          <code className="text-xs">Genki 1; Nihongo So-matome N5</code>. Give each one a
+          reference the same way, in the same order, in{' '}
+          <code className="text-xs">source_ref</code>: <code className="text-xs">chapter 3; lesson 4</code>.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

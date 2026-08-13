@@ -16,6 +16,10 @@ function formatMasteryLabel(result: ItemSearchResult | TopicSearchResult): strin
   return result.masteryLevel;
 }
 
+function formatSource(source: { label: string; reference?: string }): string {
+  return source.reference ? `${source.label} (${source.reference})` : source.label;
+}
+
 function NeedsAttentionBadge() {
   return (
     <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
@@ -79,6 +83,11 @@ export function SearchResultItem({ result }: SearchResultItemProps) {
           {formatItemMeaning(item.meaning, item.meaningAlt)}
           <span className="text-slate-400 dark:text-slate-500"> · {item.level}</span>
         </p>
+        {result.sources.length > 0 ? (
+          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+            {result.sources.map(formatSource).join(' · ')}
+          </p>
+        ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-xs capitalize text-slate-500 dark:text-slate-400">

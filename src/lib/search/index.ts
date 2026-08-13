@@ -10,6 +10,7 @@ export {
   flattenSearchResults,
   hasSearchResults,
   type ItemSearchResult,
+  type ItemSearchSource,
   type SearchFilters,
   type SearchItemGroupKey,
   type SearchLevelFilter,

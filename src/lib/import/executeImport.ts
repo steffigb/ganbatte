@@ -1,8 +1,10 @@
 import {
+  deleteItemSource,
   findItemByJapanese,
   findItemSourceLink,
   findItemTopicLink,
   getItemById,
+  listItemSourcesByItem,
   listTopicsBySkill,
   upsertImportBatch,
   upsertItem,
@@ -179,47 +181,60 @@ async function linkTopics(
   }
 }
 
-async function attachSource(
+async function attachSources(
   userId: string,
   itemId: string,
   row: ParsedImportRow,
   options: ImportOptions,
   sourceCache: Map<string, string>,
+  replaceExisting = false,
 ): Promise<boolean> {
-  if (!row.sourceLabel) {
+  if (row.sources.length === 0) {
     return false;
   }
 
-  const sourceId = await resolveSourceId(userId, row.sourceLabel, options.createSources, sourceCache);
-  if (!sourceId) {
-    return false;
-  }
-
-  const existing = await findItemSourceLink(itemId, sourceId);
   const timestamp = nowIso();
+  const resolvedSourceIds = new Set<string>();
+  let attachedAny = false;
 
-  if (existing) {
-    if (row.sourceRef) {
-      await upsertItemSource({
-        ...existing,
-        reference: row.sourceRef,
-        updatedAt: timestamp,
-      });
+  for (const { label, reference } of row.sources) {
+    const sourceId = await resolveSourceId(userId, label, options.createSources, sourceCache);
+    if (!sourceId) {
+      continue;
     }
-    return true;
+
+    resolvedSourceIds.add(sourceId);
+    attachedAny = true;
+
+    const existing = await findItemSourceLink(itemId, sourceId);
+    if (existing) {
+      if (reference) {
+        await upsertItemSource({ ...existing, reference, updatedAt: timestamp });
+      }
+      continue;
+    }
+
+    await upsertItemSource({
+      id: createId(),
+      userId,
+      itemId,
+      sourceId,
+      reference,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
   }
 
-  await upsertItemSource({
-    id: createId(),
-    userId,
-    itemId,
-    sourceId,
-    reference: row.sourceRef,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  });
+  if (replaceExisting) {
+    const currentLinks = await listItemSourcesByItem(itemId);
+    for (const link of currentLinks) {
+      if (!resolvedSourceIds.has(link.sourceId)) {
+        await deleteItemSource(link.id);
+      }
+    }
+  }
 
-  return true;
+  return attachedAny;
 }
 
 function buildLearningItem(
@@ -300,7 +315,7 @@ async function createItemFromRow(
   await upsertItem(item);
   itemIdByKey.set(itemDuplicateKey(row.type, row.japanese), item.id);
   await linkTopics(userId, item.id, row, options, topicCache);
-  await attachSource(userId, item.id, row, options, sourceCache);
+  await attachSources(userId, item.id, row, options, sourceCache);
   return item.id;
 }
 
@@ -318,7 +333,7 @@ async function updateItemFromRow(
   await upsertItem(item);
   itemIdByKey.set(itemDuplicateKey(row.type, row.japanese), item.id);
   await linkTopics(userId, item.id, row, options, topicCache);
-  await attachSource(userId, item.id, row, options, sourceCache);
+  await attachSources(userId, item.id, row, options, sourceCache, options.replaceSource);
   return item.id;
 }
 
@@ -385,7 +400,14 @@ export async function executeImport(
         } else {
           itemIdByKey.set(itemDuplicateKey(row.type, row.japanese), existing.id);
           await linkTopics(userId, existing.id, row, options, topicCache);
-          const attached = await attachSource(userId, existing.id, row, options, sourceCache);
+          const attached = await attachSources(
+            userId,
+            existing.id,
+            row,
+            options,
+            sourceCache,
+            options.replaceSource,
+          );
           if (attached || row.topicNames.length > 0) {
             attachedCount += 1;
           }

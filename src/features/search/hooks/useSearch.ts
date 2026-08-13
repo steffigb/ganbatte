@@ -20,7 +20,7 @@ export function useSearch() {
   const [error, setError] = useState<string | null>(null);
 
   const trimmedDebouncedQuery = debouncedQuery.trim();
-  const canSearch = Boolean(user && trimmedDebouncedQuery);
+  const canSearch = Boolean(user);
 
   const updateFilter = useCallback(
     <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
@@ -90,6 +90,5 @@ export function useSearch() {
     results: visibleResults,
     isSearching: canSearch && isSearching,
     error: canSearch ? error : null,
-    hasQuery: trimmedDebouncedQuery.length > 0,
   };
 }

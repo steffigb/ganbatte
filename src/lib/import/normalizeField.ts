@@ -133,6 +133,19 @@ export function parseTags(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/** Splits a `;`-separated `source`/`source_ref` cell into multiple values, so
+ * a row can attach an item to more than one source in a single import. */
+export function parseSourceList(value: string | undefined): string[] {
+  if (!value?.trim()) {
+    return [];
+  }
+
+  return value
+    .split(';')
+    .map((label) => label.trim())
+    .filter(Boolean);
+}
+
 export function parseMeaningFields(
   meaningValue: string | undefined,
   germanValue: string | undefined,

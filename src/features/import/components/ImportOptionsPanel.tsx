@@ -57,6 +57,20 @@ export function ImportOptionsPanel({ options, onChange }: ImportOptionsPanelProp
         />
         Create missing sources from CSV
       </label>
+
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+        <input
+          type="checkbox"
+          checked={options.replaceSource}
+          onChange={(event) =>
+            onChange({
+              ...options,
+              replaceSource: event.target.checked,
+            })
+          }
+        />
+        Replace existing source instead of adding to it
+      </label>
     </div>
   );
 }

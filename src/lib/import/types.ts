@@ -40,12 +40,14 @@ export type ImportOptions = {
   duplicateAction: DuplicateAction;
   createTopics: boolean;
   createSources: boolean;
+  replaceSource: boolean;
 };
 
 export const DEFAULT_IMPORT_OPTIONS: ImportOptions = {
   duplicateAction: 'attach_source',
   createTopics: true,
   createSources: true,
+  replaceSource: false,
 };
 
 export type ParsedImportRow = {
@@ -73,8 +75,7 @@ export type ParsedImportRow = {
   pairedWithJapanese?: string;
   topicNames: string[];
   tags: string[];
-  sourceLabel?: string;
-  sourceRef?: string;
+  sources: { label: string; reference?: string }[];
 };
 
 export type PreviewRowStatus = 'valid' | 'invalid' | 'duplicate';

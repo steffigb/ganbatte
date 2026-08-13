@@ -47,12 +47,15 @@ export const defaultSearchFilters: SearchFilters = {
   weakOnly: false,
 };
 
+export type ItemSearchSource = { label: string; reference?: string };
+
 export type ItemSearchResult = {
   kind: 'item';
   item: LearningItem;
   masteryLevel: MasteryLevel | 'new';
   needsAttention: boolean;
   startsWithQuery: boolean;
+  sources: ItemSearchSource[];
 };
 
 export type TopicSearchResult = {

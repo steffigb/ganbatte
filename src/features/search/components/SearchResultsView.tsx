@@ -9,23 +9,13 @@ type SearchResultsViewProps = {
   results: SearchResults;
   isSearching: boolean;
   error: string | null;
-  hasQuery: boolean;
 };
 
 export function SearchResultsView({
   results,
   isSearching,
   error,
-  hasQuery,
 }: SearchResultsViewProps) {
-  if (!hasQuery) {
-    return (
-      <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
-        Start typing to search vocabulary, kanji, grammar, topics, tags, and sources.
-      </p>
-    );
-  }
-
   if (isSearching) {
     return <LoadingSpinner label="Searching…" />;
   }

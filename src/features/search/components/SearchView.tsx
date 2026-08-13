@@ -13,7 +13,6 @@ export function SearchView() {
     results,
     isSearching,
     error,
-    hasQuery,
   } = useSearch();
 
   return (
@@ -24,12 +23,7 @@ export function SearchView() {
         onFilterChange={updateFilter}
         onReset={resetFilters}
       />
-      <SearchResultsView
-        results={results}
-        isSearching={isSearching}
-        error={error}
-        hasQuery={hasQuery}
-      />
+      <SearchResultsView results={results} isSearching={isSearching} error={error} />
     </div>
   );
 }
