@@ -101,6 +101,7 @@
 - [x] **Search results show linked sources** (2026-08-13) — item cards on `/search` now show a line under the meaning listing each linked source with its reference, e.g. `Genki 1 (chapter 3) · Nihongo So-matome N5 (lesson 4)`, hidden when the item has none. `ItemSearchResult` gained a `sources: { label, reference }[]` field, populated in `searchLocal()`/`findSimilarItemsLocal()` from a new `sourceEntriesByItemId` map built in `loadSearchContext()` (`searchService.ts`) alongside the existing flattened `sourceMetaByItemId` used for text matching
 - [x] **Sync pull pagination + force full resync** (2026-08-30) — `pullTable()` (`lib/sync/pull.ts`) previously ran a single unpaginated `select('*')` per table, which Supabase/PostgREST silently truncates at its `max_rows` cap; since `lastSyncAt` advances right after a pull, any rows past that cap would never be fetched again, leaving a device permanently short some records. Now pages through `.range()` in batches of 1000, ordered by `id` (a UUID — stable and unaffected by `updated_at` ties/mid-pagination writes), looping until a page comes back under the page size. To recover devices whose cursor had already advanced past skipped rows before this fix, added `forceFullResync()` (`syncEngine.ts`) — clears the local `lastSyncAt` cursor (`resetSyncCursor()`, `pendingChangesRepository.ts`) and re-runs a normal sync, which now does a full re-pull; never touches local unsynced data. Exposed as a "Force full resync" button in a new Sync section on `/settings` (previously a bare placeholder). `formatRelativeTime()` extracted from `SyncStatus.tsx` into `utils/date.ts` and reused by both the header sync status and the new Settings sync summary
 - [x] **Lesson setup: Type filter for kanji-vocab group** (2026-08-30) — the `kanji-vocab` lesson group queues kanji and vocabulary together (§ kanji-unlocked ordering above); `LessonSetup` gained a "Kanji + vocabulary / Kanji only / Vocabulary only" dropdown (`LessonTypeFilter`, `lessonService.ts`) alongside the existing level/topic/source filters, so picking a session can isolate e.g. "which vocab is ready now that I know its kanji" without new kanji entries mixed in. Filter is only rendered for the `kanji-vocab` group — the other lesson groups (grammar, reading, listening) are already single-type
+- [x] **Deployed to GitHub Pages on a custom domain** (2026-08-30) — previously only reachable via `npm run dev` on the laptop; now built and published on every push to `main` (`.github/workflows/deploy.yml`, `actions/deploy-pages`), served at `steffigb.dev` (OVHcloud DNS: A records to GitHub's four Pages IPs, `public/CNAME`). GitHub Pages has no server-side rewrites, so `BrowserRouter` → `HashRouter` (`src/app/providers.tsx`) to stop deep-linked routes 404ing on refresh. Repo made **public** (also doubles as a portfolio link) — verified no secrets in git history first; safe because every table/storage bucket already has RLS scoped to `auth.uid()` (ADR-006), so the public anon key can't read/write data without a valid session, and Supabase's "Allow new users to sign up" is now off so no one else can create one. `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` injected at build time from GitHub Actions repo secrets. Fuller rationale in `notes.md` (gitignored, not part of the repo)
 
 ### Next up
 - [ ] Audio upload + playback (MVP step 12)
@@ -215,7 +216,8 @@ Open the **Network** URL Vite prints (e.g. `http://192.168.x.x:5173`) on a devic
 
 ### ADR-006: Private use only
 **Decision:** No multi-user, no public deployment requirement.  
-**Rationale:** Simplifies auth (one account), RLS, and content licensing (user imports own data).
+**Rationale:** Simplifies auth (one account), RLS, and content licensing (user imports own data).  
+**Note (2026-08-30):** The app is now publicly *reachable* (GitHub Pages + `steffigb.dev`, repo made public for portfolio use) — that's a hosting/visibility choice, not a reversal of this decision. It's still single-user: no sign-up flow in the app, Supabase self-signup disabled, and RLS scopes every table/storage bucket to `auth.uid()`, so public reachability doesn't imply public data access.
 
 ### ADR-007: No Google services
 **Decision:** Do not use Google Drive, Firebase, or Google Login.  
@@ -1418,11 +1420,12 @@ Use OGG or lower bitrate to save space if needed.
 
 > **Architecture conventions:** See [§22 React + Vite Architecture & Best Practices](#22-react--vite-architecture--best-practices).
 
-### Deployment (private)
-- Static PWA build (Vercel, Netlify, own server, or Supabase hosting)
+### Deployment
+- Static PWA build on **GitHub Pages**, custom domain `steffigb.dev` (DNS at OVHcloud), auto-deployed on push to `main` via `.github/workflows/deploy.yml`
+- `HashRouter` instead of `BrowserRouter` — GitHub Pages has no server-side rewrites, so path-based routes would 404 on refresh
+- Repo is **public** (also serves as a portfolio link); safe because RLS is enabled on all tables/storage buckets and self-signup is disabled — see ADR-006
 - Supabase project in **EU region**
-- RLS enabled on all tables and storage buckets
-- For personal use only
+- Still single-user: no sign-up flow in the app, and Supabase Auth's "Allow new users to sign up" is off
 
 ---
 
