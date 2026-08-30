@@ -161,13 +161,21 @@ export async function loadLessonCandidates(
   };
 }
 
+/** Only meaningful for the `kanji-vocab` group, where one queue mixes both
+ * item types — lets the setup screen isolate "which vocab is ready to learn
+ * given the kanji I already know" without wading through new kanji entries. */
+export type LessonTypeFilter = 'all' | 'kanji' | 'expression';
+
 export function filterLessonCandidates(
   entries: LessonQueueEntry[],
   relations: Map<string, ItemRelations> | null,
-  filters: { level: LevelFilter } & RelationFilter,
+  filters: { level: LevelFilter; type?: LessonTypeFilter } & RelationFilter,
 ): LessonQueueEntry[] {
   return entries.filter(({ item }) => {
     if (filters.level !== 'all' && item.level !== filters.level) {
+      return false;
+    }
+    if (filters.type && filters.type !== 'all' && item.type !== filters.type) {
       return false;
     }
     return matchesRelationFilter(item.id, relations, filters);

@@ -21,7 +21,7 @@ export function LessonSession({ group }: LessonSessionProps) {
   }
 
   if (session.phase === 'setup') {
-    return <LessonSetup session={session} />;
+    return <LessonSetup session={session} group={group} />;
   }
 
   if (session.phase === 'complete') {

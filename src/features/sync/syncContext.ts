@@ -10,6 +10,7 @@ export type SyncContextValue = {
   status: SyncStatus;
   error: string | null;
   syncNow: () => Promise<void>;
+  forceFullResync: () => Promise<void>;
 };
 
 export const SyncContext = createContext<SyncContextValue | null>(null);

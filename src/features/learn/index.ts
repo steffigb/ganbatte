@@ -14,5 +14,6 @@ export {
   type LessonCandidates,
   type LessonGroup,
   type LessonQueueEntry,
+  type LessonTypeFilter,
 } from '@/features/learn/lessonService';
 export { loadLearnHubCards, type LearnHubCard } from '@/features/learn/learnHubService';

@@ -1,4 +1,9 @@
-export { runSync, isOnline, type SyncResult } from '@/lib/sync/syncEngine';
+export {
+  runSync,
+  forceFullResync,
+  isOnline,
+  type SyncResult,
+} from '@/lib/sync/syncEngine';
 export { pullRemoteChanges } from '@/lib/sync/pull';
 export { pushPendingChanges } from '@/lib/sync/push';
 export {

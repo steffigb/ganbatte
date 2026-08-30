@@ -2,6 +2,7 @@ import { ensureSyncMeta } from '@/lib/db/deviceId';
 import {
   countPendingChanges,
   getSyncMeta,
+  resetSyncCursor,
   updateSyncMeta,
 } from '@/lib/db/repositories/pendingChangesRepository';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
@@ -59,4 +60,9 @@ export async function runSync(userId: string): Promise<SyncResult> {
     await updateSyncMeta({ lastSyncStatus: 'error' });
     throw cause;
   }
+}
+
+export async function forceFullResync(userId: string): Promise<SyncResult> {
+  await resetSyncCursor();
+  return runSync(userId);
 }

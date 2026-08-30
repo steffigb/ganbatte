@@ -1,29 +1,9 @@
 import { Button } from '@/components/ui/Button';
 import { useSync } from '@/features/sync';
+import { formatRelativeTime } from '@/utils/date';
 
 function formatLastSync(lastSyncAt?: string): string {
-  if (!lastSyncAt) {
-    return 'Never synced';
-  }
-
-  const syncedAt = new Date(lastSyncAt);
-  const diffMs = Date.now() - syncedAt.getTime();
-  const diffMinutes = Math.floor(diffMs / 60_000);
-
-  if (diffMinutes < 1) {
-    return 'Synced just now';
-  }
-
-  if (diffMinutes < 60) {
-    return `Synced ${diffMinutes}m ago`;
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `Synced ${diffHours}h ago`;
-  }
-
-  return `Synced ${syncedAt.toLocaleDateString()}`;
+  return lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Never synced';
 }
 
 export function SyncStatus() {

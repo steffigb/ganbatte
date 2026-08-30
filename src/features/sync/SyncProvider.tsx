@@ -4,7 +4,12 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { SyncContext, type SyncContextValue } from '@/features/sync/syncContext';
 import { countPendingChanges, getSyncMeta } from '@/lib/db';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { isOnline, runSync } from '@/lib/sync';
+import {
+  forceFullResync as runForceFullResync,
+  isOnline,
+  runSync,
+  type SyncResult,
+} from '@/lib/sync';
 import type { SyncStatus } from '@/types/sync';
 
 type SyncProviderProps = {
@@ -33,35 +38,44 @@ export function SyncProvider({ children }: SyncProviderProps) {
     setStatus(meta.lastSyncStatus);
   }, [isConfigured]);
 
-  const syncNow = useCallback(async () => {
-    if (!user || !isConfigured) {
-      return;
-    }
+  const executeSync = useCallback(
+    async (run: (userId: string) => Promise<SyncResult>) => {
+      if (!user || !isConfigured) {
+        return;
+      }
 
-    if (!isOnline()) {
-      setOnline(false);
-      setStatus('offline');
-      setError('Cannot sync while offline');
-      return;
-    }
+      if (!isOnline()) {
+        setOnline(false);
+        setStatus('offline');
+        setError('Cannot sync while offline');
+        return;
+      }
 
-    setIsSyncing(true);
-    setError(null);
+      setIsSyncing(true);
+      setError(null);
 
-    try {
-      const result = await runSync(user.id);
-      setLastSyncAt(result.lastSyncAt);
-      setPendingCount(result.pending);
-      setStatus('ok');
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Sync failed';
-      setError(message);
-      setStatus(message.includes('offline') ? 'offline' : 'error');
-      await refreshStatus();
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [user, isConfigured, refreshStatus]);
+      try {
+        const result = await run(user.id);
+        setLastSyncAt(result.lastSyncAt);
+        setPendingCount(result.pending);
+        setStatus('ok');
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : 'Sync failed';
+        setError(message);
+        setStatus(message.includes('offline') ? 'offline' : 'error');
+        await refreshStatus();
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [user, isConfigured, refreshStatus],
+  );
+
+  const syncNow = useCallback(() => executeSync(runSync), [executeSync]);
+  const forceFullResync = useCallback(
+    () => executeSync(runForceFullResync),
+    [executeSync],
+  );
 
   useEffect(() => {
     function handleOnline() {
@@ -133,6 +147,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
       status,
       error,
       syncNow,
+      forceFullResync,
     }),
     [
       isConfigured,
@@ -143,6 +158,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
       status,
       error,
       syncNow,
+      forceFullResync,
     ],
   );
 

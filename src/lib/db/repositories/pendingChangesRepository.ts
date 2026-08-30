@@ -91,3 +91,17 @@ export async function updateSyncMeta(partial: {
 export async function getSyncMeta() {
   return ensureSyncMeta();
 }
+
+/**
+ * Clears the "last synced at" cursor so the next sync does a full pull
+ * instead of only fetching rows changed after the cursor. Needed to recover
+ * a device whose cursor already advanced past rows it never actually
+ * received (e.g. from a previously truncated pull).
+ */
+export async function resetSyncCursor(): Promise<void> {
+  const meta = await ensureSyncMeta();
+  await db.syncMeta.put({
+    ...meta,
+    lastSyncAt: undefined,
+  });
+}

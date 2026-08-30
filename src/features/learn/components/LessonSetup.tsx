@@ -5,19 +5,29 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { deriveRelationOptions, LevelFilterTabs } from '@/features/items';
+import type { LessonGroup } from '@/features/learn/lessonService';
 import type { LessonSessionState } from '@/features/learn/hooks/useLessonSession';
 
 type LessonSetupProps = {
   session: LessonSessionState;
+  group: LessonGroup;
 };
 
-export function LessonSetup({ session }: LessonSetupProps) {
+const typeOptions = [
+  { value: 'all', label: 'Kanji + vocabulary' },
+  { value: 'kanji', label: 'Kanji only' },
+  { value: 'expression', label: 'Vocabulary only' },
+];
+
+export function LessonSetup({ session, group }: LessonSetupProps) {
   const {
     candidateEntries,
     filteredEntries,
     relations,
     level,
     setLevel,
+    type,
+    setType,
     relationFilter,
     setRelationFilter,
     targetCount,
@@ -52,6 +62,18 @@ export function LessonSetup({ session }: LessonSetupProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <LevelFilterTabs value={level} onChange={setLevel} />
+        {group === 'kanji-vocab' ? (
+          <Select
+            id="lesson-setup-type"
+            label="Type"
+            className="w-auto"
+            value={type}
+            onChange={(event) =>
+              setType(event.target.value as typeof type)
+            }
+            options={typeOptions}
+          />
+        ) : null}
         {topicOptions.length > 0 ? (
           <Select
             id="lesson-setup-topic"

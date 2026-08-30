@@ -7,6 +7,7 @@ import {
   loadLessonCandidates,
   type LessonGroup,
   type LessonQueueEntry,
+  type LessonTypeFilter,
 } from '@/features/learn/lessonService';
 
 export type LessonPhase = 'setup' | 'studying' | 'complete';
@@ -23,6 +24,8 @@ export type LessonSessionState = {
   relations: Map<string, ItemRelations> | null;
   level: LevelFilter;
   setLevel: Dispatch<SetStateAction<LevelFilter>>;
+  type: LessonTypeFilter;
+  setType: Dispatch<SetStateAction<LessonTypeFilter>>;
   relationFilter: RelationFilter;
   setRelationFilter: Dispatch<SetStateAction<RelationFilter>>;
   targetCount: number;
@@ -108,6 +111,7 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
   const [candidateEntries, setCandidateEntries] = useState<LessonQueueEntry[]>([]);
   const [relations, setRelations] = useState<Map<string, ItemRelations> | null>(null);
   const [level, setLevel] = useState<LevelFilter>('all');
+  const [type, setType] = useState<LessonTypeFilter>('all');
   const [relationFilter, setRelationFilter] = useState<RelationFilter>(ALL_RELATIONS);
   const [targetCount, setTargetCount] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -143,6 +147,7 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
         setCandidateEntries(candidates.entries);
         setRelations(candidates.relations);
         setLevel('all');
+        setType('all');
         setRelationFilter(ALL_RELATIONS);
         setTargetCount(Math.max(1, candidates.defaultLessonSize));
 
@@ -187,8 +192,8 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
   }, [user, group, refreshKey]);
 
   const filteredEntries = useMemo(
-    () => filterLessonCandidates(candidateEntries, relations, { level, ...relationFilter }),
-    [candidateEntries, relations, level, relationFilter],
+    () => filterLessonCandidates(candidateEntries, relations, { level, type, ...relationFilter }),
+    [candidateEntries, relations, level, type, relationFilter],
   );
 
   // Re-seed the auto-selection whenever the candidate pool changes shape
@@ -297,6 +302,8 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
       relations,
       level,
       setLevel,
+      type,
+      setType,
       relationFilter,
       setRelationFilter,
       targetCount,
@@ -323,6 +330,7 @@ export function useLessonSession(group: LessonGroup): LessonSessionState {
       filteredEntries,
       relations,
       level,
+      type,
       relationFilter,
       targetCount,
       selectedIds,

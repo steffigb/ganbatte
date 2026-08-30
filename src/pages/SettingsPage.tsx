@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormAlert } from '@/components/ui/FormAlert';
 import { PlaceholderCard } from '@/components/ui/PlaceholderCard';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useSync } from '@/features/sync';
 import {
   bulkDeleteKanjiItems,
   countKanjiItems,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/maintenance';
 import { upsertAppSettings } from '@/lib/db';
 import { ensureAppSettings } from '@/lib/settings';
+import { formatRelativeTime } from '@/utils/date';
 import type { AppSettings } from '@/types/appSettings';
 
 type CleanupCounts = {
@@ -25,6 +27,16 @@ type CleanupCounts = {
 
 export function SettingsPage() {
   const { user, session } = useAuth();
+  const {
+    isConfigured: isSyncConfigured,
+    isOnline: isSyncOnline,
+    isSyncing,
+    lastSyncAt,
+    pendingCount,
+    status: syncStatus,
+    error: syncError,
+    forceFullResync,
+  } = useSync();
   const [counts, setCounts] = useState<CleanupCounts | null>(null);
   const [isLoadingCount, setIsLoadingCount] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -257,9 +269,35 @@ export function SettingsPage() {
           </label>
         </section>
 
-        <PlaceholderCard>
-          Exam date, sync, and export settings will be added here.
-        </PlaceholderCard>
+        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sync</h2>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            {!isSyncConfigured
+              ? 'Add Supabase env vars to enable sync.'
+              : isSyncing
+                ? 'Syncing…'
+                : syncStatus === 'error'
+                  ? `Sync failed${syncError ? `: ${syncError}` : ''}.`
+                  : pendingCount > 0
+                    ? `${pendingCount} local change${pendingCount === 1 ? '' : 's'} waiting to sync.`
+                    : `Last synced ${formatRelativeTime(lastSyncAt, 'never')}.`}
+          </p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            If this device shows fewer items than another after syncing, its sync cursor may
+            have skipped some rows. Forcing a full resync clears that cursor and re-pulls
+            everything from the server — it never deletes or overwrites local data.
+          </p>
+          <Button
+            type="button"
+            className="mt-4"
+            disabled={!isSyncConfigured || isSyncing || !isSyncOnline}
+            onClick={() => void forceFullResync()}
+          >
+            Force full resync
+          </Button>
+        </section>
+
+        <PlaceholderCard>Exam date and export settings will be added here.</PlaceholderCard>
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
