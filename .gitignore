@@ -24,6 +24,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Local scratch
+notes.md
+
 # Supabase CLI (local dev artifacts — commit supabase/migrations/)
 supabase/.branches
 supabase/.temp
