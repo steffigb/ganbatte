@@ -140,16 +140,16 @@ export function SearchFiltersPanel({
       />
 
       <div className="flex flex-col justify-end gap-2">
-        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex items-center gap-2 text-sm text-green-800 dark:text-green-300">
           <input
             type="checkbox"
             checked={filters.weakOnly}
             onChange={(event) => onFilterChange('weakOnly', event.target.checked)}
-            className="rounded border-slate-300 dark:border-slate-600"
+            className="rounded border-green-300 dark:border-green-600"
           />
           Weak only
         </label>
-        <Button type="button" className="w-full bg-slate-700 hover:bg-slate-800" onClick={onReset}>
+        <Button type="button" className="w-full bg-green-700 hover:bg-green-800" onClick={onReset}>
           Reset filters
         </Button>
       </div>

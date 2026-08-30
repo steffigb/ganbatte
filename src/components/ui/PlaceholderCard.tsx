@@ -6,7 +6,7 @@ type PlaceholderCardProps = {
 
 export function PlaceholderCard({ children }: PlaceholderCardProps) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+    <div className="rounded-xl border border-dashed border-green-300 bg-white p-6 text-sm text-green-700 dark:border-green-700 dark:bg-green-900 dark:text-green-400">
       {children}
     </div>
   );

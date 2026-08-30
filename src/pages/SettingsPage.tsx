@@ -239,7 +239,7 @@ export function SettingsPage() {
           <p>
             Signed in as <strong>{user?.email ?? 'unknown'}</strong>
           </p>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">
+          <p className="mt-2 text-xs text-green-700 dark:text-green-500">
             Session expires:{' '}
             {session?.expires_at
               ? new Date(session.expires_at * 1000).toLocaleString('de-DE')
@@ -247,16 +247,16 @@ export function SettingsPage() {
           </p>
         </PlaceholderCard>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <section className="rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900">
+          <h2 className="text-sm font-semibold text-green-950 dark:text-green-100">
             Lesson size
           </h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-green-700 dark:text-green-400">
             How many brand-new items a lesson session suggests by default. Each time you start
             a lesson you can change the number and pick exactly which items to learn.
           </p>
           <label className="mt-3 flex items-center gap-3 text-sm">
-            <span className="text-slate-700 dark:text-slate-300">Items per lesson</span>
+            <span className="text-green-800 dark:text-green-300">Items per lesson</span>
             <input
               type="number"
               min={1}
@@ -264,14 +264,14 @@ export function SettingsPage() {
               value={settings?.defaultLessonSize ?? ''}
               disabled={!settings || isSavingSettings}
               onChange={(event) => void handleDefaultLessonSizeChange(Number(event.target.value))}
-              className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 dark:border-slate-600 dark:bg-slate-800"
+              className="w-20 rounded-lg border border-green-300 px-2 py-1.5 dark:border-green-600 dark:bg-green-800"
             />
           </label>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sync</h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        <section className="rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900">
+          <h2 className="text-sm font-semibold text-green-950 dark:text-green-100">Sync</h2>
+          <p className="mt-1 text-sm text-green-700 dark:text-green-400">
             {!isSyncConfigured
               ? 'Add Supabase env vars to enable sync.'
               : isSyncing
@@ -282,7 +282,7 @@ export function SettingsPage() {
                     ? `${pendingCount} local change${pendingCount === 1 ? '' : 's'} waiting to sync.`
                     : `Last synced ${formatRelativeTime(lastSyncAt, 'never')}.`}
           </p>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-3 text-sm text-green-700 dark:text-green-400">
             If this device shows fewer items than another after syncing, its sync cursor may
             have skipped some rows. Forcing a full resync clears that cursor and re-pulls
             everything from the server — it never deletes or overwrites local data.
@@ -299,15 +299,15 @@ export function SettingsPage() {
 
         <PlaceholderCard>Exam date and export settings will be added here.</PlaceholderCard>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <section className="rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900">
+          <h2 className="text-sm font-semibold text-green-950 dark:text-green-100">
             Kanji readings
           </h2>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-2 text-sm text-green-700 dark:text-green-400">
             You currently have <strong>{unsetReadingLabel}</strong> onyomi/kunyomi field
             {unsetReadingCount === 1 ? '' : 's'} marked "not set".
           </p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-green-700 dark:text-green-400">
             Marks every unconfirmed onyomi/kunyomi as confirmed-absent, so it displays as
             "—" instead of "not set". Run this again after importing more kanji.
           </p>
@@ -336,38 +336,38 @@ export function SettingsPage() {
           }}
         />
 
-        <section className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
-          <h2 className="text-sm font-semibold text-red-900 dark:text-red-200">Danger zone</h2>
-          <p className="mt-2 text-sm text-red-800 dark:text-red-300">
+        <section className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40">
+          <h2 className="text-sm font-semibold text-red-800 dark:text-red-300">Danger zone</h2>
+          <p className="mt-2 text-sm text-red-700 dark:text-red-300">
             You currently have <strong>{kanjiLabel}</strong> kanji item
             {counts?.kanji === 1 ? '' : 's'} and <strong>{topicLabel}</strong> topic
             {counts?.topics === 1 ? '' : 's'}.
           </p>
-          <p className="mt-1 text-sm text-red-800 dark:text-red-300">
+          <p className="mt-1 text-sm text-red-700 dark:text-red-300">
             This removes all kanji and topics from Study, Learn, and Search. Item–topic links
             are removed; vocabulary and other items stay. Sync afterward to update Supabase.
           </p>
           <Button
             type="button"
-            className="mt-4 bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
+            className="mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
             disabled={!user || isDeleting || nothingToDelete}
             onClick={() => setConfirmOpen(true)}
           >
             Delete all kanji and topics
           </Button>
 
-          <p className="mt-6 text-sm text-red-800 dark:text-red-300">
+          <p className="mt-6 text-sm text-red-700 dark:text-red-300">
             You currently have <strong>{startedLabel}</strong> kanji/vocabulary/grammar item
             {startedCount === 1 ? '' : 's'} with SRS progress.
           </p>
-          <p className="mt-1 text-sm text-red-800 dark:text-red-300">
+          <p className="mt-1 text-sm text-red-700 dark:text-red-300">
             Resets kanji, vocabulary, and grammar items to "not started" — deletes their SRS
             progress and review history so they re-enter Lessons as brand-new. Items, topics,
             and sources stay. Sync afterward to update Supabase.
           </p>
           <Button
             type="button"
-            className="mt-4 bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
+            className="mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
             disabled={!user || isResettingProgress || nothingToReset}
             onClick={() => setConfirmResetProgressOpen(true)}
           >

@@ -21,7 +21,7 @@ export function LessonSessionPage() {
       description="No grading here — just get familiar with each item before it enters your reviews."
     >
       {!lessonGroup ? (
-        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
+        <p className="rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
           Unknown lesson group.{' '}
           <Link to={routes.learnHub} className="underline">
             Back to Learn

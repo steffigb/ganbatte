@@ -69,7 +69,7 @@ export function TopicsPage() {
             {topicCount > 0 ? (
               <Button
                 type="button"
-                className="bg-red-700 px-3 py-1.5 text-sm hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
+                className="bg-red-600 px-3 py-1.5 text-sm hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
                 disabled={isDeleting}
                 onClick={() => setConfirmOpen(true)}
               >

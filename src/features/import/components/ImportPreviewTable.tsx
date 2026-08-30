@@ -45,16 +45,16 @@ function statusClass(row: ImportPreviewRow): string {
 export function ImportPreviewTable({ rows, stats }: ImportPreviewTableProps) {
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
+      <div className="flex flex-wrap gap-3 text-sm text-green-700 dark:text-green-300">
         <span>{stats.total} rows</span>
         <span>{stats.valid} new items</span>
         <span>{stats.duplicate} skipped</span>
         <span>{stats.invalid} invalid</span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="overflow-x-auto rounded-lg border border-green-200 dark:border-green-700">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+          <thead className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">
             <tr>
               <th className="px-3 py-2 font-medium">Row</th>
               <th className="px-3 py-2 font-medium">Status</th>
@@ -69,7 +69,7 @@ export function ImportPreviewTable({ rows, stats }: ImportPreviewTableProps) {
             {rows.map((row) => (
               <tr
                 key={row.rowNumber}
-                className="border-t border-slate-200 dark:border-slate-700"
+                className="border-t border-green-200 dark:border-green-700"
               >
                 <td className="px-3 py-2 align-top">{row.rowNumber}</td>
                 <td className="px-3 py-2 align-top">
@@ -90,12 +90,12 @@ export function ImportPreviewTable({ rows, stats }: ImportPreviewTableProps) {
                 <td className="px-3 py-2 align-top">
                   {row.data?.example ?? '—'}
                   {row.data?.exampleMeaning ? (
-                    <span className="block text-slate-500 dark:text-slate-400">
+                    <span className="block text-green-700 dark:text-green-400">
                       {row.data.exampleMeaning}
                     </span>
                   ) : null}
                 </td>
-                <td className="px-3 py-2 align-top text-slate-600 dark:text-slate-400">
+                <td className="px-3 py-2 align-top text-green-700 dark:text-green-400">
                   {row.errors.length > 0 ? row.errors.join('; ') : '—'}
                 </td>
               </tr>

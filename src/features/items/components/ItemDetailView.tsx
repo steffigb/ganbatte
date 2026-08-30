@@ -35,7 +35,7 @@ function WordClassBadges({ item }: { item: ItemDetail['item'] }) {
       {badges.map((label) => (
         <span
           key={label}
-          className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+          className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800 dark:text-green-300"
         >
           {label}
         </span>
@@ -48,30 +48,30 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
   const { item, topics, sources, pairedItem } = detail;
 
   return (
-    <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+    <div className="space-y-6 rounded-xl border border-green-200 bg-white p-6 dark:border-green-800 dark:bg-green-900">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p
             className={cn(
-              'font-medium text-slate-900 dark:text-slate-100',
+              'font-medium text-green-950 dark:text-green-100',
               item.type === 'kanji' ? 'text-5xl leading-none' : 'text-3xl',
             )}
           >
             {item.japanese}
           </p>
           {item.type !== 'kanji' && item.reading ? (
-            <p className="text-lg text-slate-500 dark:text-slate-400">{item.reading}</p>
+            <p className="text-lg text-green-700 dark:text-green-400">{item.reading}</p>
           ) : null}
         </div>
         <Link
           to={`${routes.add}?edit=${item.id}`}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+          className="rounded-lg border border-green-300 px-3 py-2 text-sm hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
         >
           Edit
         </Link>
       </div>
 
-      <p className="text-lg font-medium text-slate-900 dark:text-slate-100">
+      <p className="text-lg font-medium text-green-950 dark:text-green-100">
         {formatItemMeaning(item.meaning, item.meaningAlt)}
       </p>
 
@@ -86,24 +86,24 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
         <>
           <WordClassBadges item={item} />
           {pairedItem ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-green-700 dark:text-green-400">
               Paired verb:{' '}
               <Link
                 to={routes.itemDetail(pairedItem.id)}
-                className="font-medium text-slate-900 underline dark:text-slate-100"
+                className="font-medium text-green-950 underline dark:text-green-100"
               >
                 {pairedItem.japanese}
               </Link>
             </p>
           ) : null}
           {item.example ? (
-            <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
-              <p className="text-slate-900 dark:text-slate-100">{item.example}</p>
+            <div className="rounded-lg bg-green-50 p-3 text-sm dark:bg-green-800">
+              <p className="text-green-950 dark:text-green-100">{item.example}</p>
               {item.exampleReading ? (
-                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
+                <p className="mt-1 text-green-700 dark:text-green-400">{item.exampleReading}</p>
               ) : null}
               {item.exampleMeaning ? (
-                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleMeaning}</p>
+                <p className="mt-1 text-green-700 dark:text-green-400">{item.exampleMeaning}</p>
               ) : null}
             </div>
           ) : null}
@@ -114,21 +114,21 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
       {item.type === 'grammar' ? (
         <>
           {item.formation ? (
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <p className="text-sm font-medium text-green-800 dark:text-green-300">
               {item.formation}
             </p>
           ) : null}
           {item.explanation ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">{item.explanation}</p>
+            <p className="text-sm text-green-700 dark:text-green-400">{item.explanation}</p>
           ) : null}
           {item.example ? (
-            <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
-              <p className="text-slate-900 dark:text-slate-100">{item.example}</p>
+            <div className="rounded-lg bg-green-50 p-3 text-sm dark:bg-green-800">
+              <p className="text-green-950 dark:text-green-100">{item.example}</p>
               {item.exampleReading ? (
-                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
+                <p className="mt-1 text-green-700 dark:text-green-400">{item.exampleReading}</p>
               ) : null}
               {item.exampleMeaning ? (
-                <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleMeaning}</p>
+                <p className="mt-1 text-green-700 dark:text-green-400">{item.exampleMeaning}</p>
               ) : null}
             </div>
           ) : null}
@@ -139,7 +139,7 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
       {item.type === 'reading' ? (
         <>
           {item.passageText ? (
-            <div className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100">
+            <div className="whitespace-pre-wrap rounded-lg bg-green-50 p-3 text-sm text-green-950 dark:bg-green-800 dark:text-green-100">
               {item.passageText}
             </div>
           ) : null}
@@ -155,18 +155,18 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
       ) : null}
 
       {item.notes ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">{item.notes}</p>
+        <p className="text-sm text-green-700 dark:text-green-400">{item.notes}</p>
       ) : null}
 
       {topics.length > 0 ? (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Topics</p>
-          <p className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm font-medium text-green-800 dark:text-green-300">Topics</p>
+          <p className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-green-700 dark:text-green-400">
             {topics.map((topic, index) => (
               <span key={topic.id}>
                 <Link
                   to={routes.topicDetail(topic.id)}
-                  className="font-medium text-slate-900 underline dark:text-slate-100"
+                  className="font-medium text-green-950 underline dark:text-green-100"
                 >
                   {topic.name}
                 </Link>
@@ -179,8 +179,8 @@ export function ItemDetailView({ detail, userId }: ItemDetailViewProps) {
 
       {sources.length > 0 ? (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Sources</p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm font-medium text-green-800 dark:text-green-300">Sources</p>
+          <p className="text-sm text-green-700 dark:text-green-400">
             {sources
               .map(({ source, reference }) =>
                 reference ? `${source.label} (${reference})` : source.label,

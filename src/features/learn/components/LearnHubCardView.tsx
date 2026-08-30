@@ -22,12 +22,12 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
   const inProgress = Math.max(0, card.totalItems - card.masteredItems - card.lessonsAvailable);
 
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="space-y-3 rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900">
       <div>
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+        <h2 className="text-base font-semibold text-green-950 dark:text-green-100">
           {card.label}
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-green-700 dark:text-green-400">
           {card.totalItems} item{card.totalItems === 1 ? '' : 's'} · {card.masteredItems} mastered
           {inProgress > 0 ? ` · ${inProgress} in progress` : ''}
           {card.lessonsAvailable > 0 ? ` · ${card.lessonsAvailable} not started` : ''}
@@ -37,14 +37,14 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
       <div className="flex flex-wrap gap-2">
         <Link
           to={routes.lessons(card.group)}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          className="rounded-lg bg-green-900 px-3 py-2 text-sm font-medium text-white hover:bg-green-800 dark:bg-green-100 dark:text-green-900 dark:hover:bg-green-200"
         >
           Start lessons ({card.lessonsAvailable})
         </Link>
         {card.hasReviews ? (
           <Link
             to={routes.study}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+            className="rounded-lg border border-green-300 px-3 py-2 text-sm font-medium hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
           >
             Start reviews ({card.reviewsDue})
           </Link>
@@ -53,7 +53,7 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
 
       <div className="flex flex-wrap gap-3 text-sm">
         {BROWSE_LINKS[card.group].map((link) => (
-          <Link key={link.skill} to={routes.learn(link.skill)} className="text-slate-600 underline dark:text-slate-400">
+          <Link key={link.skill} to={routes.learn(link.skill)} className="text-green-700 underline dark:text-green-400">
             {link.label}
           </Link>
         ))}
@@ -61,7 +61,7 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
 
       {card.group === 'reading' || card.group === 'listening' ? (
         <div className="pt-1">
-          <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mb-1 text-xs text-green-700 dark:text-green-400">
             Practicing with material outside the app (a textbook, a video)? Log it directly:
           </p>
           <LogPracticeForm skill={card.group} />
@@ -69,8 +69,8 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
       ) : null}
 
       {card.group === 'listening' ? (
-        <div className="space-y-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <div className="space-y-2 border-t border-green-100 pt-3 dark:border-green-800">
+          <p className="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-400">
             Useful N4 listening resources
           </p>
           <ul className="space-y-2">
@@ -80,15 +80,15 @@ export function LearnHubCardView({ card }: LearnHubCardViewProps) {
                   href={resource.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-medium text-slate-900 underline dark:text-slate-100"
+                  className="font-medium text-green-950 underline dark:text-green-100"
                 >
                   {resource.title}
                 </a>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{resource.description}</p>
+                <p className="text-xs text-green-700 dark:text-green-400">{resource.description}</p>
               </li>
             ))}
           </ul>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-green-700 dark:text-green-400">
             Tip: add your own YouTube or textbook links as Sources (skill: listening), then log
             minutes here after each session.
           </p>

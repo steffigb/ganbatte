@@ -14,11 +14,11 @@ export function PracticeSession({ items, onExit }: PracticeSessionProps) {
 
   if (session.isComplete) {
     return (
-      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+      <div className="space-y-4 rounded-xl border border-green-200 bg-white p-6 text-center dark:border-green-800 dark:bg-green-900">
+        <h2 className="text-lg font-semibold text-green-950 dark:text-green-100">
           Practice complete
         </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-green-700 dark:text-green-400">
           {session.stats.correct} / {session.stats.reviewed} correct — this session doesn&apos;t
           affect your spaced-repetition schedule.
         </p>
@@ -28,7 +28,7 @@ export function PracticeSession({ items, onExit }: PracticeSessionProps) {
           </Button>
           <Button
             type="button"
-            className="border border-slate-300 bg-transparent text-slate-900 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="border border-green-300 bg-transparent text-green-950 hover:bg-green-50 dark:border-green-600 dark:text-green-100 dark:hover:bg-green-800"
             onClick={onExit}
           >
             Change filters
@@ -53,7 +53,7 @@ export function PracticeSession({ items, onExit }: PracticeSessionProps) {
           <>
             <Button
               type="button"
-              className="bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
               onClick={() => session.mark(false)}
             >
               Forgot it

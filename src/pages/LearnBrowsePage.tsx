@@ -58,14 +58,14 @@ export function LearnBrowsePage() {
       description="Browse items by skill, level, topic, and source."
     >
       {!isValidSkill ? (
-        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
+        <p className="rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
           Unknown skill. Use vocabulary, kanji, grammar, reading, or listening.
         </p>
       ) : (
         <div className="space-y-4">
           <Link
             to={routes.learnHub}
-            className="text-sm font-medium text-slate-600 underline dark:text-slate-400"
+            className="text-sm font-medium text-green-700 underline dark:text-green-400"
           >
             ← Learn overview
           </Link>
@@ -118,14 +118,14 @@ export function LearnBrowsePage() {
             ) : null}
             <Link
               to={routes.add}
-              className="text-sm font-medium text-slate-700 underline dark:text-slate-300"
+              className="text-sm font-medium text-green-800 underline dark:text-green-300"
             >
               Add item
             </Link>
           </div>
 
           {showMasteryCounts && masteryCounts && filteredItems.length > 0 ? (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-green-700 dark:text-green-400">
               {filteredItems.length} {browseSkill} · {masteryCounts.mastered} mastered ·{' '}
               {masteryCounts.familiar} familiar · {masteryCounts.learning} learning ·{' '}
               {masteryCounts.new} new

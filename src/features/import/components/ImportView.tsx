@@ -54,7 +54,7 @@ export function ImportView() {
             </Button>
             <Button
               type="button"
-              className="bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700 dark:hover:bg-slate-800"
+              className="bg-white text-green-950 ring-1 ring-green-200 hover:bg-green-50 dark:bg-green-900 dark:text-green-100 dark:ring-green-700 dark:hover:bg-green-800"
               disabled={isLoading}
               onClick={backToInput}
             >

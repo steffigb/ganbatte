@@ -38,16 +38,16 @@ export function LogPracticeForm({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-green-50 p-3 text-sm dark:bg-green-800">
       <label className="flex items-center gap-2">
-        <span className="text-slate-700 dark:text-slate-300">Minutes practiced</span>
+        <span className="text-green-800 dark:text-green-300">Minutes practiced</span>
         <input
           type="number"
           min={1}
           max={240}
           value={minutes}
           onChange={(event) => setMinutes(Number(event.target.value))}
-          className="w-20 rounded-lg border border-slate-300 px-2 py-1 dark:border-slate-600 dark:bg-slate-900"
+          className="w-20 rounded-lg border border-green-300 px-2 py-1 dark:border-green-600 dark:bg-green-900"
         />
       </label>
       <Button type="button" disabled={isSaving} onClick={() => void handleLog()}>

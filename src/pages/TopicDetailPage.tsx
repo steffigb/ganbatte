@@ -53,7 +53,7 @@ export function TopicDetailPage() {
   if (!topic) {
     return (
       <PageLayout title="Topic not found">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-green-700 dark:text-green-400">
           This topic doesn&apos;t exist or was deleted.{' '}
           <Link to={routes.topics} className="underline">
             Back to topics
@@ -70,16 +70,16 @@ export function TopicDetailPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             to={routes.topics}
-            className="text-sm font-medium text-slate-600 underline dark:text-slate-400"
+            className="text-sm font-medium text-green-700 underline dark:text-green-400"
           >
             ← All topics
           </Link>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <span className="rounded-full bg-green-100 px-2.5 py-1 dark:bg-green-800">
               {topic.level} · {topic.skill}
             </span>
             {progress && progress.itemCount > 0 ? (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+              <span className="rounded-full bg-green-100 px-2.5 py-1 dark:bg-green-800">
                 {progress.masteredCount}/{progress.itemCount} mastered · {progress.masteryPercent}%
               </span>
             ) : null}

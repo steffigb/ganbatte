@@ -39,16 +39,16 @@ export function KanjiCompoundsList({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Compounds</p>
+      <p className="text-sm font-medium text-green-800 dark:text-green-300">Compounds</p>
       <div className="space-y-2">
         {compounds.map((compound) => {
           const content = (
-            <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
-              <p className="text-slate-900 dark:text-slate-100">{compound.japanese}</p>
+            <div className="rounded-lg bg-green-50 p-3 text-sm dark:bg-green-800">
+              <p className="text-green-950 dark:text-green-100">{compound.japanese}</p>
               {compound.reading ? (
-                <p className="mt-1 text-slate-500 dark:text-slate-400">{compound.reading}</p>
+                <p className="mt-1 text-green-700 dark:text-green-400">{compound.reading}</p>
               ) : null}
-              <p className="mt-1 text-slate-600 dark:text-slate-300">
+              <p className="mt-1 text-green-700 dark:text-green-300">
                 {formatItemMeaning(compound.meaning, compound.meaningAlt)}
               </p>
             </div>

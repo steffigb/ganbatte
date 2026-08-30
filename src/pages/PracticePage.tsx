@@ -67,7 +67,7 @@ export function PracticePage() {
       return (
         <PageLayout title="Practice">
           <div className="space-y-4">
-            <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
+            <p className="rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
               No items match these filters.
             </p>
             <Button type="button" onClick={() => setItems(null)}>
@@ -93,7 +93,7 @@ export function PracticePage() {
       title="Practice"
       description="Drill N5 kanji, verbs, a topic, or anything you keep forgetting — independent of the SRS queue."
     >
-      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className="space-y-4 rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900">
         {error ? (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
             {error}
@@ -102,7 +102,7 @@ export function PracticePage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1 text-sm">
-            <span className="text-slate-700 dark:text-slate-300">Skill</span>
+            <span className="text-green-800 dark:text-green-300">Skill</span>
             <select
               value={filters.skill ?? ''}
               onChange={(event) => {
@@ -114,7 +114,7 @@ export function PracticePage() {
                   partOfSpeech: skill && skill !== 'vocabulary' ? undefined : current.partOfSpeech,
                 }));
               }}
-              className="block w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
+              className="block w-full rounded-lg border border-green-300 px-3 py-2 dark:border-green-600 dark:bg-green-800"
             >
               <option value="">Any skill</option>
               {SKILL_OPTIONS.map((option) => (
@@ -126,7 +126,7 @@ export function PracticePage() {
           </label>
 
           <label className="space-y-1 text-sm">
-            <span className="text-slate-700 dark:text-slate-300">Level</span>
+            <span className="text-green-800 dark:text-green-300">Level</span>
             <select
               value={filters.level ?? ''}
               onChange={(event) =>
@@ -135,7 +135,7 @@ export function PracticePage() {
                   level: (event.target.value || undefined) as JlptLevel | undefined,
                 }))
               }
-              className="block w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
+              className="block w-full rounded-lg border border-green-300 px-3 py-2 dark:border-green-600 dark:bg-green-800"
             >
               <option value="">Any level</option>
               <option value="N5">N5</option>
@@ -144,7 +144,7 @@ export function PracticePage() {
           </label>
 
           <label className="space-y-1 text-sm">
-            <span className="text-slate-700 dark:text-slate-300">Part of speech</span>
+            <span className="text-green-800 dark:text-green-300">Part of speech</span>
             <select
               value={filters.partOfSpeech ?? ''}
               disabled={Boolean(filters.skill && filters.skill !== 'vocabulary')}
@@ -154,7 +154,7 @@ export function PracticePage() {
                   partOfSpeech: (event.target.value || undefined) as PartOfSpeech | undefined,
                 }))
               }
-              className="block w-full rounded-lg border border-slate-300 px-3 py-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800"
+              className="block w-full rounded-lg border border-green-300 px-3 py-2 disabled:opacity-50 dark:border-green-600 dark:bg-green-800"
             >
               <option value="">Any part of speech</option>
               {PART_OF_SPEECH_OPTIONS.map((option) => (
@@ -166,13 +166,13 @@ export function PracticePage() {
           </label>
 
           <label className="space-y-1 text-sm">
-            <span className="text-slate-700 dark:text-slate-300">Topic</span>
+            <span className="text-green-800 dark:text-green-300">Topic</span>
             <select
               value={filters.topicId ?? ''}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, topicId: event.target.value || undefined }))
               }
-              className="block w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
+              className="block w-full rounded-lg border border-green-300 px-3 py-2 dark:border-green-600 dark:bg-green-800"
             >
               <option value="">Any topic</option>
               {topics.map((topic) => (
@@ -190,9 +190,9 @@ export function PracticePage() {
               onChange={(event) =>
                 setFilters((current) => ({ ...current, strugglingOnly: event.target.checked }))
               }
-              className="h-4 w-4 rounded border-slate-300 dark:border-slate-600"
+              className="h-4 w-4 rounded border-green-300 dark:border-green-600"
             />
-            <span className="text-slate-700 dark:text-slate-300">
+            <span className="text-green-800 dark:text-green-300">
               Only items I keep forgetting
             </span>
           </label>

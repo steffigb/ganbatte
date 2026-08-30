@@ -15,12 +15,12 @@ type KanjiReadingLineProps = {
 
 function KanjiReadingLine({ label, display, unset }: KanjiReadingLineProps) {
   return (
-    <p className="text-sm text-slate-600 dark:text-slate-400">
+    <p className="text-sm text-green-700 dark:text-green-400">
       {label}:{' '}
       <span
         className={cn(
           unset && 'italic text-amber-700 dark:text-amber-300',
-          display === READING_NONE_LABEL && 'text-slate-500 dark:text-slate-400',
+          display === READING_NONE_LABEL && 'text-green-700 dark:text-green-400',
         )}
       >
         {display}

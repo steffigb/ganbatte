@@ -78,7 +78,7 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
 
   if (items.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
+      <p className="rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
         No items yet.{' '}
         <Link to={routes.add} className="underline">
           Add your first item
@@ -113,7 +113,7 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
         }}
       />
 
-      <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+      <ul className="divide-y divide-green-200 rounded-xl border border-green-200 bg-white dark:divide-green-800 dark:border-green-800 dark:bg-green-900">
       {items.map((item) => {
         const itemRelations = relations?.get(item.id);
         const topics = itemRelations?.topics ?? [];
@@ -131,7 +131,7 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
             <Link
               to={routes.itemDetail(item.id)}
               className={cn(
-                'block font-medium text-slate-900 hover:underline dark:text-slate-100',
+                'block font-medium text-green-950 hover:underline dark:text-green-100',
                 item.type === 'kanji' ? 'text-4xl leading-none' : 'text-base',
               )}
             >
@@ -140,22 +140,22 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
             {item.type === 'kanji' ? (
               <KanjiReadingsBlock item={item} />
             ) : item.reading ? (
-              <p className="text-slate-500 dark:text-slate-400">{item.reading}</p>
+              <p className="text-green-700 dark:text-green-400">{item.reading}</p>
             ) : null}
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-green-700 dark:text-green-400">
               {formatItemMeaning(item.meaning, item.meaningAlt)}
             </p>
-            <p className="text-slate-500 dark:text-slate-500">
+            <p className="text-green-700 dark:text-green-500">
               {item.level} · {item.type}
             </p>
             {topics.length > 0 ? (
-              <p className="text-slate-500 dark:text-slate-500">
+              <p className="text-green-700 dark:text-green-500">
                 Topics:{' '}
                 {topics.map((topic, index) => (
                   <span key={topic.id}>
                     <Link
                       to={routes.topicDetail(topic.id)}
-                      className="underline hover:text-slate-700 dark:hover:text-slate-300"
+                      className="underline hover:text-green-800 dark:hover:text-green-300"
                     >
                       {topic.name}
                     </Link>
@@ -165,7 +165,7 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
               </p>
             ) : null}
             {sources.length > 0 ? (
-              <p className="text-slate-500 dark:text-slate-500">
+              <p className="text-green-700 dark:text-green-500">
                 Sources:{' '}
                 {sources
                   .map(({ source, reference }) =>
@@ -178,13 +178,13 @@ export function ItemList({ items, isLoading, error, onDelete }: ItemListProps) {
           <div className="flex shrink-0 gap-2">
             <Link
               to={`${routes.add}?edit=${item.id}`}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
+              className="rounded-lg border border-green-300 px-3 py-2 text-sm hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
             >
               Edit
             </Link>
             <Button
               type="button"
-              className="bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
               disabled={isDeleting}
               onClick={() => setPendingDelete(item)}
             >

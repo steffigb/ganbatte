@@ -12,8 +12,8 @@ type SkillReadinessProps = {
 
 export function SkillReadiness({ skillReadiness }: SkillReadinessProps) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Readiness by skill</h2>
+    <div className="rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900">
+      <h2 className="text-sm font-semibold text-green-950 dark:text-green-100">Readiness by skill</h2>
       <ul className="mt-3 space-y-2">
         {(Object.keys(SKILL_LABELS) as Array<keyof typeof SKILL_LABELS>).map((skill) => {
           const percent = skillReadiness[skill];
@@ -21,12 +21,12 @@ export function SkillReadiness({ skillReadiness }: SkillReadinessProps) {
           return (
             <li key={skill}>
               <div className="mb-1 flex items-center justify-between text-sm">
-                <span className="text-slate-700 dark:text-slate-300">{SKILL_LABELS[skill]}</span>
-                <span className="text-slate-500 dark:text-slate-400">{percent}%</span>
+                <span className="text-green-800 dark:text-green-300">{SKILL_LABELS[skill]}</span>
+                <span className="text-green-700 dark:text-green-400">{percent}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+              <div className="h-2 overflow-hidden rounded-full bg-green-200 dark:bg-green-800">
                 <div
-                  className="h-full rounded-full bg-slate-900 dark:bg-slate-100"
+                  className="h-full rounded-full bg-green-900 dark:bg-green-100"
                   style={{ width: `${percent}%` }}
                 />
               </div>
