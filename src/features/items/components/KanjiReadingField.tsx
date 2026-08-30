@@ -48,12 +48,12 @@ export function KanjiReadingField({
         onChange={(event) => setValue(event.target.value)}
         className={cn(isUnset && 'border-amber-300 dark:border-amber-700')}
       />
-      <label className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+      <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
         <input
           type="checkbox"
           checked={field.noneChecked}
           onChange={(event) => setNoneChecked(event.target.checked)}
-          className="rounded border-green-300"
+          className="rounded border-slate-300"
         />
         {noneLabel}
       </label>

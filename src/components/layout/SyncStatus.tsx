@@ -21,7 +21,7 @@ export function SyncStatus() {
   if (!isConfigured) {
     return (
       <span
-        className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-800 dark:text-green-400"
+        className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400"
         title="Add Supabase env vars to enable sync"
       >
         Sync not configured
@@ -46,7 +46,7 @@ export function SyncStatus() {
   return (
     <div className="flex items-center gap-2">
       <span
-        className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-800 dark:text-green-400"
+        className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400"
         title={title}
       >
         {label}

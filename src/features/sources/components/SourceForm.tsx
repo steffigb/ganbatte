@@ -51,9 +51,9 @@ export function SourceForm({ onSubmit }: SourceFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900"
+      className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
     >
-      <h2 className="text-sm font-semibold text-green-950 dark:text-green-100">New source</h2>
+      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">New source</h2>
       <Input
         id="source-label"
         label="Label"

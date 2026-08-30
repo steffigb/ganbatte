@@ -12,7 +12,7 @@ export function PageLayout({ title, description, children }: PageLayoutProps) {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description ? (
-          <p className="text-sm text-green-700 dark:text-green-400">{description}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
         ) : null}
       </header>
       {children}

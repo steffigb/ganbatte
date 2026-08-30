@@ -14,8 +14,8 @@ const duplicateOptions = [
 
 export function ImportOptionsPanel({ options, onChange }: ImportOptionsPanelProps) {
   return (
-    <div className="space-y-4 rounded-lg border border-green-200 p-4 dark:border-green-700">
-      <h3 className="text-sm font-semibold text-green-950 dark:text-green-100">Import options</h3>
+    <div className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Import options</h3>
 
       <Select
         id="import-duplicate-action"
@@ -30,7 +30,7 @@ export function ImportOptionsPanel({ options, onChange }: ImportOptionsPanelProp
         }
       />
 
-      <label className="flex items-center gap-2 text-sm text-green-800 dark:text-green-300">
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
         <input
           type="checkbox"
           checked={options.createTopics}
@@ -44,7 +44,7 @@ export function ImportOptionsPanel({ options, onChange }: ImportOptionsPanelProp
         Create missing topics from CSV
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-green-800 dark:text-green-300">
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
         <input
           type="checkbox"
           checked={options.createSources}
@@ -58,7 +58,7 @@ export function ImportOptionsPanel({ options, onChange }: ImportOptionsPanelProp
         Create missing sources from CSV
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-green-800 dark:text-green-300">
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
         <input
           type="checkbox"
           checked={options.replaceSource}

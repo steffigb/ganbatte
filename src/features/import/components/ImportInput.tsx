@@ -23,8 +23,8 @@ export function ImportInput({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300">
-        <p className="font-medium text-green-900 dark:text-green-100">CSV format</p>
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+        <p className="font-medium text-slate-800 dark:text-slate-100">CSV format</p>
         <p className="mt-1">
           Multiple meanings in one cell: use <code className="text-xs"> · </code> (mediopunkt).
           Import also accepts <code className="text-xs">/</code> or <code className="text-xs">;</code> and
@@ -64,7 +64,7 @@ export function ImportInput({
         <Button type="button" onClick={() => fileInputRef.current?.click()}>
           Choose CSV file
         </Button>
-        {filename ? <span className="text-sm text-green-700 dark:text-green-400">{filename}</span> : null}
+        {filename ? <span className="text-sm text-slate-600 dark:text-slate-400">{filename}</span> : null}
       </div>
 
       <Textarea

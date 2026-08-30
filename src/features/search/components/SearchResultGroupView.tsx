@@ -11,17 +11,17 @@ export function SearchResultGroupView({ group, className }: SearchResultGroupVie
   return (
     <section
       className={cn(
-        'flex flex-col overflow-hidden rounded-xl border border-green-200 bg-white dark:border-green-800 dark:bg-green-900',
+        'flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900',
         className,
       )}
     >
-      <h2 className="border-b border-green-200 px-4 py-2 text-sm font-semibold text-green-950 dark:border-green-800 dark:text-green-100">
+      <h2 className="border-b border-slate-200 px-4 py-2 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-slate-100">
         {group.label}{' '}
-        <span className="font-normal text-green-700 dark:text-green-400">
+        <span className="font-normal text-slate-500 dark:text-slate-400">
           ({group.results.length})
         </span>
       </h2>
-      <ul className="max-h-[26rem] divide-y divide-green-200 overflow-y-auto dark:divide-green-800">
+      <ul className="max-h-[26rem] divide-y divide-slate-200 overflow-y-auto dark:divide-slate-800">
         {group.results.map((result) => (
           <SearchResultItem
             key={result.kind === 'topic' ? result.topic.id : result.item.id}

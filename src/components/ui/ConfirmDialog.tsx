@@ -28,7 +28,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-green-900/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
       role="presentation"
       onClick={onCancel}
     >
@@ -38,27 +38,27 @@ export function ConfirmDialog({
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
         className={cn(
-          'w-full max-w-md rounded-xl border border-green-200 bg-white p-6 shadow-lg',
-          'dark:border-green-700 dark:bg-green-900',
+          'w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-lg',
+          'dark:border-slate-700 dark:bg-slate-900',
         )}
         onClick={(event) => event.stopPropagation()}
       >
         <h2
           id="confirm-dialog-title"
-          className="text-lg font-medium text-green-950 dark:text-green-100"
+          className="text-lg font-medium text-slate-900 dark:text-slate-100"
         >
           {title}
         </h2>
         <p
           id="confirm-dialog-message"
-          className="mt-2 text-sm text-green-700 dark:text-green-400"
+          className="mt-2 text-sm text-slate-600 dark:text-slate-400"
         >
           {message}
         </p>
         <div className="mt-6 flex justify-end gap-2">
           <Button
             type="button"
-            className="bg-green-200 text-green-950 hover:bg-green-300 dark:bg-green-800 dark:text-green-100 dark:hover:bg-green-700"
+            className="bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
             disabled={isConfirming}
             onClick={onCancel}
           >
@@ -66,7 +66,7 @@ export function ConfirmDialog({
           </Button>
           <Button
             type="button"
-            className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+            className="bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
             disabled={isConfirming}
             onClick={onConfirm}
           >

@@ -34,23 +34,23 @@ export function SearchResultItem({ result }: SearchResultItemProps) {
       <li className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
         <div className="min-w-0 space-y-0.5">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium text-green-950 dark:text-green-100">
+            <p className="font-medium text-slate-900 dark:text-slate-100">
               {result.topic.name}
             </p>
             {result.needsAttention ? <NeedsAttentionBadge /> : null}
           </div>
-          <p className="truncate text-green-700 dark:text-green-400">
+          <p className="truncate text-slate-600 dark:text-slate-400">
             {result.topic.level} · {result.topic.skill}
             {result.topic.description ? ` · ${result.topic.description}` : ''}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs text-green-700 dark:text-green-300">
+          <span className="text-xs text-slate-600 dark:text-slate-300">
             {formatMasteryLabel(result)}
           </span>
           <Link
             to={routes.topics}
-            className="rounded-lg border border-green-300 px-2.5 py-1 text-xs hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
+            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
           >
             View topics
           </Link>
@@ -68,40 +68,40 @@ export function SearchResultItem({ result }: SearchResultItemProps) {
           <Link
             to={routes.itemDetail(item.id)}
             className={cn(
-              'font-medium text-green-950 hover:underline dark:text-green-100',
+              'font-medium text-slate-900 hover:underline dark:text-slate-100',
               item.type === 'kanji' ? 'text-3xl leading-none' : 'text-base',
             )}
           >
             {item.japanese}
           </Link>
           {item.reading ? (
-            <span className="text-xs text-green-700 dark:text-green-400">{item.reading}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{item.reading}</span>
           ) : null}
           {result.needsAttention ? <NeedsAttentionBadge /> : null}
         </div>
-        <p className="truncate text-green-700 dark:text-green-400">
+        <p className="truncate text-slate-600 dark:text-slate-400">
           {formatItemMeaning(item.meaning, item.meaningAlt)}
-          <span className="text-green-600 dark:text-green-500"> · {item.level}</span>
+          <span className="text-slate-400 dark:text-slate-500"> · {item.level}</span>
         </p>
         {result.sources.length > 0 ? (
-          <p className="truncate text-xs text-green-700 dark:text-green-400">
+          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
             {result.sources.map(formatSource).join(' · ')}
           </p>
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="text-xs capitalize text-green-700 dark:text-green-400">
+        <span className="text-xs capitalize text-slate-500 dark:text-slate-400">
           {formatMasteryLabel(result)}
         </span>
         <Link
           to={`${routes.add}?edit=${item.id}`}
-          className="rounded-lg border border-green-300 px-2.5 py-1 text-xs hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
+          className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
         >
           Edit
         </Link>
         <Link
           to={routes.study}
-          className="rounded-lg border border-green-300 px-2.5 py-1 text-xs hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
+          className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
         >
           Study
         </Link>

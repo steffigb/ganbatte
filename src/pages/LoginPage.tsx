@@ -36,7 +36,7 @@ export function LoginPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <PageLayout title="Login" description="Sign in to sync your learning data across devices.">
-        <div className="rounded-xl border border-green-200 bg-white p-6 dark:border-green-700 dark:bg-green-900">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
           <LoginForm />
         </div>
       </PageLayout>

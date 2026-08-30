@@ -42,14 +42,14 @@ export function TopicList({
 
   if (topics.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
+      <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
         No topics yet. Create one above to organize your items.
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-green-200 rounded-xl border border-green-200 bg-white dark:divide-green-800 dark:border-green-800 dark:bg-green-900">
+    <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
       {topics.map((topic) => {
         const progress = progressByTopicId?.get(topic.id);
         const progressLabel = formatTopicProgress(progress);
@@ -63,7 +63,7 @@ export function TopicList({
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 to={routes.topicDetail(topic.id)}
-                className="font-medium text-green-950 hover:underline dark:text-green-100"
+                className="font-medium text-slate-900 hover:underline dark:text-slate-100"
               >
                 {topic.name}
               </Link>
@@ -73,17 +73,17 @@ export function TopicList({
                 </span>
               ) : null}
             </div>
-            <p className="text-green-700 dark:text-green-400">
+            <p className="text-slate-500 dark:text-slate-400">
               {topic.level} · {topic.skill}
               {progressLabel ? <span> · {progressLabel}</span> : null}
             </p>
             {topic.description ? (
-              <p className="text-green-700 dark:text-green-400">{topic.description}</p>
+              <p className="text-slate-600 dark:text-slate-400">{topic.description}</p>
             ) : null}
           </div>
           <Button
             type="button"
-            className="shrink-0 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+            className="shrink-0 bg-red-700 hover:bg-red-800 dark:bg-red-900 dark:hover:bg-red-800"
             onClick={() => void onDelete(topic.id)}
           >
             Delete

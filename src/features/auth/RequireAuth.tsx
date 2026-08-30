@@ -9,7 +9,7 @@ export function RequireAuth() {
 
   if (!isConfigured) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-green-700 dark:text-green-400">
+      <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-slate-600 dark:text-slate-400">
         Supabase is not configured. Add <code>VITE_SUPABASE_URL</code> and{' '}
         <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> to your <code>.env</code> file.
       </div>

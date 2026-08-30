@@ -34,7 +34,7 @@ export function WordKanjiBreakdown({ userId, japanese }: WordKanjiBreakdownProps
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-green-800 dark:text-green-300">Made of</p>
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Made of</p>
       <ul className="flex flex-wrap gap-2">
         {characters.map((char) => {
           const kanjiItem = kanjiItems.find((item) => item.japanese === char);
@@ -44,15 +44,15 @@ export function WordKanjiBreakdown({ userId, japanese }: WordKanjiBreakdownProps
               {kanjiItem ? (
                 <Link
                   to={routes.itemDetail(kanjiItem.id)}
-                  className="flex flex-col items-center rounded-lg border border-green-200 px-3 py-2 text-center hover:bg-green-50 dark:border-green-700 dark:hover:bg-green-800"
+                  className="flex flex-col items-center rounded-lg border border-slate-200 px-3 py-2 text-center hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
                 >
                   <span className="text-2xl">{char}</span>
-                  <span className="text-xs text-green-700 dark:text-green-400">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     {kanjiItem.meaning}
                   </span>
                 </Link>
               ) : (
-                <span className="flex flex-col items-center rounded-lg border border-dashed border-green-300 px-3 py-2 text-center text-green-600 dark:border-green-700">
+                <span className="flex flex-col items-center rounded-lg border border-dashed border-slate-300 px-3 py-2 text-center text-slate-400 dark:border-slate-700">
                   <span className="text-2xl">{char}</span>
                   <span className="text-xs">not in list</span>
                 </span>

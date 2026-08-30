@@ -22,13 +22,13 @@ export function ReviewSession() {
   if (session.isComplete) {
     if (session.queue.length === 0) {
       return (
-        <div className="space-y-4 rounded-xl border border-dashed border-green-300 p-6 text-center dark:border-green-700">
-          <p className="text-sm text-green-700 dark:text-green-400">
+        <div className="space-y-4 rounded-xl border border-dashed border-slate-300 p-6 text-center dark:border-slate-700">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             No cards due right now. Add vocabulary, kanji, or grammar items to start reviewing.
           </p>
           <Link
             to={routes.add}
-            className="inline-block rounded-lg bg-green-900 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 dark:bg-green-100 dark:text-green-900 dark:hover:bg-green-200"
+            className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
           >
             Add items
           </Link>

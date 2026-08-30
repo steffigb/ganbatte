@@ -8,7 +8,7 @@ type LevelFilterTabsProps = {
 
 export function LevelFilterTabs({ value, onChange }: LevelFilterTabsProps) {
   return (
-    <div className="inline-flex rounded-lg border border-green-200 p-1 dark:border-green-700">
+    <div className="inline-flex rounded-lg border border-slate-200 p-1 dark:border-slate-700">
       {(['all', 'N4', 'N5'] as const).map((option) => (
         <button
           key={option}
@@ -16,8 +16,8 @@ export function LevelFilterTabs({ value, onChange }: LevelFilterTabsProps) {
           className={cn(
             'rounded-md px-3 py-1.5 text-sm',
             value === option
-              ? 'bg-green-900 text-white dark:bg-green-100 dark:text-green-900'
-              : 'text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-800',
+              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
           )}
           onClick={() => onChange(option)}
         >

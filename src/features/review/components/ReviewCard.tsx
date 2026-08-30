@@ -20,7 +20,7 @@ type ReviewCardProps = {
 
 function ItemMeta({ item }: { item: LearningItem }) {
   return (
-    <p className="text-xs uppercase tracking-wide text-green-700 dark:text-green-400">
+    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
       {item.level} · {item.type}
     </p>
   );
@@ -42,7 +42,7 @@ function WordClassBadges({ item }: { item: LearningItem }) {
       {badges.map((label) => (
         <span
           key={label}
-          className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800 dark:text-green-300"
+          className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
         >
           {label}
         </span>
@@ -57,13 +57,13 @@ function ExampleSentence({ item }: { item: LearningItem }) {
   }
 
   return (
-    <div className="rounded-lg bg-green-50 p-3 text-sm dark:bg-green-800">
-      <p className="text-green-950 dark:text-green-100">{item.example}</p>
+    <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
+      <p className="text-slate-900 dark:text-slate-100">{item.example}</p>
       {item.exampleReading ? (
-        <p className="mt-1 text-green-700 dark:text-green-400">{item.exampleReading}</p>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleReading}</p>
       ) : null}
       {item.exampleMeaning ? (
-        <p className="mt-1 text-green-700 dark:text-green-400">{item.exampleMeaning}</p>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">{item.exampleMeaning}</p>
       ) : null}
     </div>
   );
@@ -73,13 +73,13 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-6 rounded-xl border border-green-200 bg-white p-6 dark:border-green-800 dark:bg-green-900">
+    <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
       <ItemMeta item={item} />
 
       <div className="space-y-2 text-center">
-        <p className="text-4xl font-medium text-green-950 dark:text-green-100">{item.japanese}</p>
+        <p className="text-4xl font-medium text-slate-900 dark:text-slate-100">{item.japanese}</p>
         {item.type !== 'kanji' && item.reading ? (
-          <p className="text-lg text-green-700 dark:text-green-400">{item.reading}</p>
+          <p className="text-lg text-slate-500 dark:text-slate-400">{item.reading}</p>
         ) : null}
       </div>
 
@@ -88,8 +88,8 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
           <button
             type="button"
             className={cn(
-              'rounded-lg border border-green-300 px-4 py-2 text-sm font-medium',
-              'hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800',
+              'rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium',
+              'hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800',
             )}
             onClick={onReveal}
           >
@@ -97,8 +97,8 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
           </button>
         </div>
       ) : (
-        <div className="space-y-3 border-t border-green-200 pt-4 dark:border-green-800">
-          <p className="text-lg font-medium text-green-950 dark:text-green-100">
+        <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <p className="text-lg font-medium text-slate-900 dark:text-slate-100">
             {formatItemMeaning(item.meaning, item.meaningAlt)}
           </p>
           {item.type === 'kanji' ? (
@@ -112,12 +112,12 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
             <>
               {item.type === 'expression' ? <WordClassBadges item={item} /> : null}
               {item.type === 'grammar' && item.formation ? (
-                <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   {item.formation}
                 </p>
               ) : null}
               {item.type === 'grammar' && item.explanation ? (
-                <p className="text-sm text-green-700 dark:text-green-400">{item.explanation}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{item.explanation}</p>
               ) : null}
               <ExampleSentence item={item} />
               {item.type === 'expression' && user ? (
@@ -129,7 +129,7 @@ export function ReviewCard({ item, isRevealed, onReveal }: ReviewCardProps) {
             </>
           )}
           {item.notes ? (
-            <p className="text-sm text-green-700 dark:text-green-400">{item.notes}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{item.notes}</p>
           ) : null}
         </div>
       )}

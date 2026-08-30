@@ -41,13 +41,13 @@ export function ExampleReferences({ userId, example }: ExampleReferencesProps) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-green-800 dark:text-green-300">In this example</p>
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">In this example</p>
       <div className="flex flex-wrap gap-2">
         {vocabulary.map((item) => (
           <Link
             key={item.id}
             to={routes.itemDetail(item.id)}
-            className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-300 dark:hover:bg-green-700"
+            className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             {item.japanese} · {formatItemMeaning(item.meaning, item.meaningAlt)}
           </Link>
@@ -56,7 +56,7 @@ export function ExampleReferences({ userId, example }: ExampleReferencesProps) {
           <Link
             key={item.id}
             to={routes.itemDetail(item.id)}
-            className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-300 dark:hover:bg-green-700"
+            className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             {item.japanese} · {item.meaning}
           </Link>

@@ -195,7 +195,7 @@ function ItemFormFields({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-green-200 bg-white p-4 dark:border-green-800 dark:bg-green-900"
+      className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
@@ -221,8 +221,8 @@ function ItemFormFields({
         onChange={(event) => setJapanese(event.target.value)}
       />
       {type === 'kanji' ? (
-        <div className="space-y-4 rounded-lg border border-green-200 p-4 dark:border-green-700">
-          <p className="text-sm font-medium text-green-800 dark:text-green-300">Readings</p>
+        <div className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Readings</p>
           <KanjiReadingField
             id="kanji-onyomi"
             label="On'yomi"
@@ -249,8 +249,8 @@ function ItemFormFields({
         />
       )}
       {type === 'expression' ? (
-        <div className="space-y-4 rounded-lg border border-green-200 p-4 dark:border-green-700">
-          <p className="text-sm font-medium text-green-800 dark:text-green-300">
+        <div className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Word class (optional)
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -310,11 +310,11 @@ function ItemFormFields({
       />
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-green-800 dark:text-green-300">
+        <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">
           Topics (optional)
         </legend>
         {topics.length === 0 ? (
-          <p className="text-sm text-green-700 dark:text-green-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             No topics yet.{' '}
             <Link to={routes.topics} className="underline">
               Create topics
@@ -330,11 +330,11 @@ function ItemFormFields({
                     type="checkbox"
                     checked={topicIds.includes(topic.id)}
                     onChange={() => toggleTopic(topic.id)}
-                    className="rounded border-green-300"
+                    className="rounded border-slate-300"
                   />
                   <span>
                     {topic.name}{' '}
-                    <span className="text-green-700">
+                    <span className="text-slate-500">
                       ({topic.level} · {topic.skill})
                     </span>
                   </span>
@@ -346,11 +346,11 @@ function ItemFormFields({
       </fieldset>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-green-800 dark:text-green-300">
+        <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">
           Sources (optional)
         </legend>
         {sources.length === 0 ? (
-          <p className="text-sm text-green-700 dark:text-green-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             No sources yet.{' '}
             <Link to={routes.topics} className="underline">
               Create sources
@@ -369,12 +369,12 @@ function ItemFormFields({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleSource(source.id)}
-                      className="rounded border-green-300"
+                      className="rounded border-slate-300"
                     />
                     <span>
                       {source.label}
                       {source.type ? (
-                        <span className="text-green-700"> ({source.type})</span>
+                        <span className="text-slate-500"> ({source.type})</span>
                       ) : null}
                     </span>
                   </label>

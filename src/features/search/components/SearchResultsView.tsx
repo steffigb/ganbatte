@@ -26,9 +26,9 @@ export function SearchResultsView({
 
   if (!hasSearchResults(results)) {
     return (
-      <div className="space-y-3 rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
+      <div className="space-y-3 rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
         <p>No matches found. Try a shorter query or reset your filters.</p>
-        <Link to={routes.add} className="font-medium text-green-800 underline dark:text-green-300">
+        <Link to={routes.add} className="font-medium text-slate-700 underline dark:text-slate-300">
           Create new item
         </Link>
       </div>
@@ -47,13 +47,13 @@ export function SearchResultsView({
         />
       ))}
 
-      <div className="rounded-xl border border-green-200 bg-white p-4 text-sm dark:border-green-800 dark:bg-green-900 sm:col-span-2">
-        <p className="text-green-700 dark:text-green-400">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-900 sm:col-span-2">
+        <p className="text-slate-600 dark:text-slate-400">
           Didn&apos;t find what you need?
         </p>
         <Link
           to={routes.add}
-          className="mt-2 inline-block font-medium text-green-800 underline dark:text-green-300"
+          className="mt-2 inline-block font-medium text-slate-700 underline dark:text-slate-300"
         >
           Create new item
         </Link>

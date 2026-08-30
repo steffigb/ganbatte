@@ -39,20 +39,20 @@ export function ImportResultView({ result, onStartOver }: ImportResultViewProps)
         </div>
       ) : null}
 
-      <p className="text-sm text-green-700 dark:text-green-300">
+      <p className="text-sm text-slate-600 dark:text-slate-300">
         Changes are saved locally. Use <strong>Sync now</strong> in the header to push to Supabase.
       </p>
 
       <div className="flex flex-wrap gap-3">
         <Link
           to={routes.learn('kanji')}
-          className="rounded-lg border border-green-200 px-4 py-2 text-sm text-green-800 dark:border-green-700 dark:text-green-200"
+          className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200"
         >
           Browse kanji
         </Link>
         <Link
           to={routes.topics}
-          className="rounded-lg border border-green-200 px-4 py-2 text-sm text-green-800 dark:border-green-700 dark:text-green-200"
+          className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200"
         >
           View topics
         </Link>

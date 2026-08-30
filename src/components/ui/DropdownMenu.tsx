@@ -48,8 +48,8 @@ export function DropdownMenu({ label, active, children }: DropdownMenuProps) {
         className={cn(
           'flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors',
           active
-            ? 'bg-green-900 text-white dark:bg-green-100 dark:text-green-900'
-            : 'text-green-700 hover:bg-green-100 dark:text-green-300 dark:hover:bg-green-800',
+            ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
         )}
       >
         {label}
@@ -68,7 +68,7 @@ export function DropdownMenu({ label, active, children }: DropdownMenuProps) {
       {isOpen ? (
         <div
           onClick={() => setIsOpen(false)}
-          className="absolute top-full right-0 z-10 mt-1 w-48 space-y-0.5 rounded-lg border border-green-200 bg-white p-1 shadow-lg dark:border-green-700 dark:bg-green-900"
+          className="absolute top-full right-0 z-10 mt-1 w-48 space-y-0.5 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900"
         >
           {children}
         </div>

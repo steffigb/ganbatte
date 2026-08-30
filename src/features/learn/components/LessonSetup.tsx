@@ -44,13 +44,13 @@ export function LessonSetup({ session, group }: LessonSetupProps) {
 
   if (candidateEntries.length === 0) {
     return (
-      <div className="space-y-4 rounded-xl border border-dashed border-green-300 p-6 text-center dark:border-green-700">
-        <p className="text-sm text-green-700 dark:text-green-400">
+      <div className="space-y-4 rounded-xl border border-dashed border-slate-300 p-6 text-center dark:border-slate-700">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           No new items left in this group.
         </p>
         <Link
           to={routes.learnHub}
-          className="inline-block rounded-lg bg-green-900 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 dark:bg-green-100 dark:text-green-900 dark:hover:bg-green-200"
+          className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
         >
           Back to Learn
         </Link>
@@ -117,21 +117,21 @@ export function LessonSetup({ session, group }: LessonSetupProps) {
           onChange={(event) => setTargetCount(Math.max(1, Number(event.target.value) || 1))}
           className="w-24"
         />
-        <p className="text-sm text-green-700 dark:text-green-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           {filteredEntries.length} item{filteredEntries.length === 1 ? '' : 's'} available ·{' '}
           {selectedIds.size} selected
         </p>
       </div>
 
       {filteredEntries.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-green-300 p-4 text-sm text-green-700 dark:border-green-700 dark:text-green-400">
+        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-400">
           No items match these filters.
         </p>
       ) : (
-        <ul className="max-h-96 space-y-1 overflow-y-auto rounded-xl border border-green-200 p-2 dark:border-green-800">
+        <ul className="max-h-96 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-800">
           {filteredEntries.map(({ item, kanjiReady }) => (
             <li key={item.id}>
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-green-50 dark:hover:bg-green-800">
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
                 <input
                   type="checkbox"
                   className="mt-1"
@@ -139,17 +139,17 @@ export function LessonSetup({ session, group }: LessonSetupProps) {
                   onChange={() => toggleSelect(item.id)}
                 />
                 <span className="flex-1 text-sm">
-                  <span className="font-medium text-green-950 dark:text-green-100">
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
                     {item.japanese}
                   </span>{' '}
-                  <span className="text-green-700 dark:text-green-400">{item.meaning}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{item.meaning}</span>
                   {!kanjiReady ? (
                     <span className="ml-2 text-xs text-amber-600 dark:text-amber-500">
                       kanji not learned yet
                     </span>
                   ) : null}
                 </span>
-                <span className="rounded-full border border-green-300 px-2 py-0.5 text-xs text-green-700 dark:border-green-600 dark:text-green-400">
+                <span className="rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-500 dark:border-slate-600 dark:text-slate-400">
                   {item.level}
                 </span>
               </label>
@@ -164,7 +164,7 @@ export function LessonSetup({ session, group }: LessonSetupProps) {
         </Button>
         <Link
           to={routes.learnHub}
-          className="rounded-lg border border-green-300 px-4 py-2 text-sm font-medium hover:bg-green-50 dark:border-green-600 dark:hover:bg-green-800"
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
         >
           Back to Learn
         </Link>
